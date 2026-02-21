@@ -1,0 +1,11 @@
+<svg viewBox="0 0 120 80">
+  <ellipse
+    cx="60"
+    cy="40"
+    rx="55"
+    ry="30"
+    fill="green"
+    stroke="black"
+    stroke-width="4"
+  />
+</svg>
