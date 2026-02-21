@@ -18,6 +18,55 @@ class ShapeDrawer:
 
         return pos
 
+    @staticmethod
+    def normalise_positions(positions):
+        """
+        Recentre a positions dict so the drawing is centred on screen.
+        positions: { node_id: (x, y) }
+        """
+        xs = [p[0] for p in positions.values()]
+        ys = [p[1] for p in positions.values()]
+        cx = (min(xs) + max(xs)) / 2.0
+        cy = (min(ys) + max(ys)) / 2.0
+
+        out = {}
+        for k, (x, y) in positions.items():
+            out[k] = (x - cx, y - cy)
+        return out
+
+
+    @staticmethod
+    def draw_pipe_with_arrow(t, x1, y1, x2, y2, elbow="mid"):
+        """
+        Draw an orthogonal (right-angle) pipe from (x1,y1) to (x2,y2),
+        with an arrow head at the end indicating direction.
+        elbow:
+            "mid" -> go to mid-x, then vertical, then horizontal
+            "hvh" -> horizontal then vertical
+            "vhv" -> vertical then horizontal
+        """
+        if elbow == "vhv":
+            px, py = x1, y2
+            path = [(x1, y1), (px, py), (x2, y2)]
+        elif elbow == "hvh":
+            px, py = x2, y1
+            path = [(x1, y1), (px, py), (x2, y2)]
+        else:
+            mx = (x1 + x2) / 2.0
+            path = [(x1, y1), (mx, y1), (mx, y2), (x2, y2)]
+
+        # draw the polyline
+        t.penup()
+        t.goto(path[0][0], path[0][1])
+        t.pendown()
+        for (px, py) in path[1:]:
+            t.goto(px, py)
+
+        # arrow head aligned with the final segment direction
+        (ax0, ay0) = path[-2]
+        (ax1, ay1) = path[-1]
+        ShapeDrawer.draw_arrow(t, ax0, ay0, ax1, ay1)
+
     # ---------- Drawing primitives ----------
     @staticmethod
     def draw_rect(t, cx, cy, w, h, pen_colour="black", fill_colour=None):
@@ -199,7 +248,7 @@ class ShapeDrawer:
 
     # ---------- Graph drawing ----------
     @staticmethod
-    def draw_graph(graph, node_types=None, node_w=70, node_h=40, title="Graph"):
+    def draw_graph(graph, node_types=None, node_positions=None, node_w=70, node_h=40, title="Map"):
         """
         graph format:
             { upstream: [(downstream, edge_id), ...], ... }
@@ -215,7 +264,11 @@ class ShapeDrawer:
             for nid in node_types.keys():
                 nodes.add(nid)
 
-        positions = ShapeDrawer.circle_layout(nodes)
+        if node_positions is None:
+            positions = ShapeDrawer.circle_layout(nodes)
+        else:
+            # Use provided x,y positions to make it look schematic/map-like
+            positions = ShapeDrawer.normalise_positions(node_positions)
 
         screen = turtle.Screen()
         screen.title(title)
@@ -235,7 +288,11 @@ class ShapeDrawer:
                 t.pencolor("black")
                 t.fillcolor("black")
                 sx, sy, ex, ey = ShapeDrawer.clipped_edge_points((x1, y1), (x2, y2), node_w, node_h)
-                ShapeDrawer.draw_arrow(t, sx, sy, ex, ey)
+                if node_positions is None:
+                    ShapeDrawer.draw_arrow(t, sx, sy, ex, ey)
+                else:
+                    # orthogonal routing feels more like pipes on a map
+                    ShapeDrawer.draw_pipe_with_arrow(t, sx, sy, ex, ey, elbow="mid")
 
                 # edge id box at midpoint (centre-to-centre midpoint for readability)
                 mx = (x1 + x2) / 2
