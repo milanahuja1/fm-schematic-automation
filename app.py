@@ -1,17 +1,20 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QMainWindow
+from mainwindow.MainWindow import MainWindow
+from NetworkGenerator import NetworkGenerator
+import os
 
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
+app = QApplication(sys.argv)
+#Instantiates a window
+window = MainWindow()
+window.show()
 
-        self.setWindowTitle("Empty PyQt Window")
-        self.resize(800, 600)
+base_dir = os.path.dirname(os.path.abspath(__file__))
+nodePath = os.path.join(base_dir, "data", "nodeTable.csv")
+edgesPath = os.path.join(base_dir, "data", "edgeTable.csv")
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
+graph = NetworkGenerator.load_edges(edgesPath)
+nodes = NetworkGenerator.load_nodes(nodePath)
+print(graph)
 
-    window = MainWindow()
-    window.show()
-
-    sys.exit(app.exec())
+sys.exit(app.exec())
