@@ -4,10 +4,10 @@ from PyQt6.QtCore import Qt, QPointF
 from Shapes import RectangleNode, OvalNode, TriangleNode
 from Shapes import *
 from PyQt6.QtSvgWidgets import QGraphicsSvgItem
+from SvgNodeFactory import SvgNodeFactory
 
 
 class NetworkDrawer:
-
     @staticmethod
     def drawNetwork(graph, nodes):
         """
@@ -27,14 +27,16 @@ class NetworkDrawer:
             QGraphicsView (ready to embed in a window)
         """
         scene = QGraphicsScene()
+
+        # Draw nodes
+        for node_id, data in nodes.items():
+            node_type = data["type"]
+            x = data["x"]
+            y = -data["y"]  # flip y for Qt coordinate system
+
+            item = SvgNodeFactory.create(node_type, x, y)
+            scene.addItem(item)
+
+        # Create and return view
         view = QGraphicsView(scene)
-
-        item = QGraphicsSvgItem("shapes/node.svg")
-        scene.addItem(item)
-
-        item = QGraphicsSvgItem("shapes/redtriangle.svg")
-        scene.addItem(item)
-
-        item = QGraphicsSvgItem("shapes/greenoval.svg")
-        scene.addItem(item)
         return view

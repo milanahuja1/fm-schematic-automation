@@ -43,20 +43,21 @@ class NetworkGenerator:
     @staticmethod
     def load_nodes_with_xy(filename):
         """
-        Reads nodes.csv with columns: id,type,x,y
+        Reads a node CSV with columns: id,type,x,y
         Returns:
-            node_types: { node_id: int_type }
-            node_positions: { node_id: (float_x, float_y) }
+            { node_id: {"type": int, "x": float, "y": float}, ... }
         """
-        node_types = {}
-        node_positions = {}
+        node_map = {}
 
-        with open(filename, newline="") as file:
-            reader = csv.DictReader(file)
-
+        with open(filename, newline="") as f:
+            reader = csv.DictReader(f)
+            # Expecting: id,type,x,y
             for row in reader:
                 node_id = row["id"]
-                node_types[node_id] = int(row["type"])
-                node_positions[node_id] = (float(row["x"]), float(row["y"]))
+                node_map[node_id] = {
+                    "type": int(row["type"]),
+                    "x": float(row["x"]),
+                    "y": float(row["y"]),
+                }
 
-        return node_types, node_positions
+        return node_map
