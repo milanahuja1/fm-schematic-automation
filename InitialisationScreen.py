@@ -1,5 +1,6 @@
 from PyQt6 import uic
 from PyQt6.QtWidgets import QWidget, QFileDialog
+from PyQt6.QtGui import QFont
 import os
 import sys
 
@@ -9,6 +10,16 @@ class InitialisationScreen(QWidget):
         super().__init__()
         uic.loadUi("InitialisationScreen.ui", self)
         self.appManager = appManager
+
+        # Set custom button font
+        button_font = QFont("Fira Code", 11)
+        button_font.setBold(True)
+
+        self.importNodesButton.setFont(button_font)
+        self.importPipesButton.setFont(button_font)
+        self.importSensorsButton.setFont(button_font)
+        self.useSampleDataButton.setFont(button_font)
+        self.createGraphButton.setFont(button_font)
 
         #Grey out the createGraph button
         self.createGraphButton.setEnabled(False)
@@ -32,6 +43,8 @@ class InitialisationScreen(QWidget):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.appManager.pipePath = edgesPath = os.path.join(base_dir, "data", "edgeTable.csv")
         self.appManager.nodePath = os.path.join(base_dir, "data", "nodeTable.csv")
+        self.appManager.sensorsPath = os.path.join(base_dir, "data", "sensors.csv")
+        self.appManager.createGraph()
 
 
     def import_nodes(self):

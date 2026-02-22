@@ -66,7 +66,7 @@ class SvgNodeFactory:
         label = QGraphicsSimpleTextItem(str(node_id), item)
         label.setFlag(label.GraphicsItemFlag.ItemIgnoresTransformations, True)
 
-        font = QFont("Courier New", 12)
+        font = QFont("Fira Code", 12)
         font.setBold(True)
         label.setFont(font)
 
