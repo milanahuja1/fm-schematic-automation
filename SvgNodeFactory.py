@@ -1,36 +1,80 @@
 import os
 from PyQt6.QtSvgWidgets import QGraphicsSvgItem
+from PyQt6.QtWidgets import QGraphicsSimpleTextItem
+from PyQt6.QtGui import QFont
+
+
+class SvgNodeItem(QGraphicsSvgItem):
+    def __init__(self, path, node_id, node_type, tooltip_text=None):
+        super().__init__(path)
+        self.node_id = node_id
+        self.node_type = node_type
+        self.base_scale = 1.0
+        self.setFlag(self.GraphicsItemFlag.ItemIsMovable, True)
+        self.setFlag(self.GraphicsItemFlag.ItemIsSelectable, True)
+
+
+
+        self.setAcceptHoverEvents(True)
+        #self.setTransformOriginPoint(self.boundingRect().center())
+        self.setToolTip(tooltip_text or f"Node: {node_id}\nType: {node_type}")
+
+    def hoverEnterEvent(self, event):
+        #self.setScale(self.base_scale * 1.1)
+        super().hoverEnterEvent(event)
+
+    def hoverLeaveEvent(self, event):
+        #self.setScale(self.base_scale)
+        super().hoverLeaveEvent(event)
+
 
 class SvgNodeFactory:
-
     SVG_MAP = {
         1: "node.svg",
         2: "greenoval.svg",
         3: "redtriangle.svg",
     }
 
+    # folder containing the SVG files
     SVG_DIR = os.path.join("shapes")
 
     @staticmethod
-    def create(node_type, x, y, width=70):
-        svg_file = SvgNodeFactory.SVG_MAP.get(node_type)
-
+    def create(node_id, node_type, x, y, width=50, tooltip_text=None):
+        svg_file = SvgNodeFactory.SVG_MAP.get(int(node_type))
         if svg_file is None:
             raise ValueError(f"Unknown node type: {node_type}")
 
         path = os.path.join(SvgNodeFactory.SVG_DIR, svg_file)
+        item = SvgNodeItem(path, node_id=node_id, node_type=node_type, tooltip_text=tooltip_text)
 
-        item = QGraphicsSvgItem(path)
-
-        # ---- scale consistently ----
-        renderer = item.renderer()
-        bounds = renderer.viewBoxF()
-
-        scale = width / bounds.width()
+        bounds = item.renderer().viewBoxF()
+        scale = 1.0 if bounds.width() == 0 else (float(width) / bounds.width())
         item.setScale(scale)
+        item.base_scale = scale
 
-        # ---- centre the item ----
-        item.setPos(x - (bounds.width() * scale) / 2,
-                    y - (bounds.height() * scale) / 2)
+        # --------------------------
+        # Attach ID label under symbol (child of SVG)
+        # --------------------------
+        label = QGraphicsSimpleTextItem(str(node_id), item)
+        label.setFlag(label.GraphicsItemFlag.ItemIgnoresTransformations, True)
+
+        font = QFont("Courier New", 12)
+        font.setBold(True)
+        label.setFont(font)
+
+        # centre label horizontally under the SVG
+        svg_bounds = item.boundingRect()
+        text_bounds = label.boundingRect()
+
+        label.setPos(
+            svg_bounds.width() / 2.0 - text_bounds.width() / 2.0,
+            svg_bounds.height() + 4.0,
+        )
+
+        # centre the SVG at (x, y)
+        item.setPos(
+            float(x) - (bounds.width() * scale) / 2.0,
+            float(y) - (bounds.height() * scale) / 2.0,
+        )
 
         return item
