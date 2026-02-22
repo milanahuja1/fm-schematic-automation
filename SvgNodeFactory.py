@@ -12,8 +12,8 @@ class SvgNodeItem(QGraphicsSvgItem):
         self.base_scale = 1.0
         self.setFlag(self.GraphicsItemFlag.ItemIsMovable, True)
         self.setFlag(self.GraphicsItemFlag.ItemIsSelectable, True)
-
-
+        self.connectedPipes = []
+        self.setFlag(self.GraphicsItemFlag.ItemSendsGeometryChanges, True)
 
         self.setAcceptHoverEvents(True)
         #self.setTransformOriginPoint(self.boundingRect().center())
@@ -26,6 +26,14 @@ class SvgNodeItem(QGraphicsSvgItem):
     def hoverLeaveEvent(self, event):
         #self.setScale(self.base_scale)
         super().hoverLeaveEvent(event)
+
+
+    def itemChange(self, change, value):
+        # When this node moves, update any connected pipes
+        if change == self.GraphicsItemChange.ItemPositionHasChanged:
+            for pipe in self.connectedPipes:
+                pipe.updatePosition()
+        return super().itemChange(change, value)
 
 
 class SvgNodeFactory:

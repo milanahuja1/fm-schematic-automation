@@ -1,9 +1,9 @@
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView
-from PyQt6.QtGui import QPainter, QPen
-from PyQt6.QtCore import Qt, QPointF
+from PyQt6.QtGui import QPainter
+from PyQt6.QtCore import Qt
 
 from SvgNodeFactory import SvgNodeFactory
-
+from PipeItem import PipeItem
 
 import networkx as nx
 from networkx.drawing.nx_pydot import graphviz_layout
@@ -61,52 +61,46 @@ class NetworkDrawer:
         scene = QGraphicsScene()
 
         # --------------------------
-        # Draw Pipes
+        # Create SVG node items (store references)
         # --------------------------
-        pen = QPen(Qt.GlobalColor.black)
-        pen.setWidth(1)
-
-        for upstreamNode, outs in graph.items():
-            if upstreamNode not in nodes:
-                continue
-
-            # centres in scene coords (flip Y to match how SVG nodes are drawn)
-            startX = nodes[upstreamNode]["x"]
-            startY = -nodes[upstreamNode]["y"]
-
-            for downstreamNode, edge_id in outs:
-                if downstreamNode not in nodes:
-                    continue
-
-                endX = nodes[downstreamNode]["x"]
-                endY = -nodes[downstreamNode]["y"]
-
-                scene.addLine(startX, startY, endX, endY, pen)
-
-
-
-
-
-
-
-
-
-        # --------------------------
-        # Draw SVG nodes on top
-        # --------------------------
+        node_items = {}
         for node_id, data in nodes.items():
             node_type = data["type"]
             x = data["x"]
             y = -data["y"]
 
-            tooltip_text = None
-            # If you store extra hover info in the node dict, use it.
-            # Example: nodes[node_id] = {"type": 1, "x": 0, "y": 0, "tooltip": "..."}
-            if "tooltip" in data:
-                tooltip_text = data["tooltip"]
+            tooltip_text = data.get("tooltip")
 
             item = SvgNodeFactory.create(node_id, node_type, x, y, tooltip_text=tooltip_text)
             scene.addItem(item)
+            node_items[node_id] = item
+
+        # --------------------------
+        # Create Pipes (edges) and register them on nodes
+        # --------------------------
+        for upstreamNode, outs in graph.items():
+            if upstreamNode not in node_items:
+                continue
+
+            for downstreamNode, edge_id in outs:
+                if downstreamNode not in node_items:
+                    continue
+
+                pipe = PipeItem(
+                    upstream_item=node_items[upstreamNode],
+                    downstream_item=node_items[downstreamNode],
+                    edge_id=edge_id,
+                    base_width=1,
+                    hover_width=2,
+                    arrow_size=10.0,
+                    hit_width=12.0,
+                    draw_label=False,
+                )
+                scene.addItem(pipe)
+
+                # Either endpoint moving should update the pipe
+                node_items[upstreamNode].connectedPipes.append(pipe)
+                node_items[downstreamNode].connectedPipes.append(pipe)
 
         view = QGraphicsView(scene)
         view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
