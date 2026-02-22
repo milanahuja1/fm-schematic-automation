@@ -1,9 +1,7 @@
-
-
 import math
-from PyQt6.QtWidgets import QGraphicsItem
+from PyQt6.QtWidgets import QGraphicsItem, QToolTip
 from PyQt6.QtGui import QPen, QBrush, QPainterPath, QPolygonF
-from PyQt6.QtCore import Qt, QRectF, QPointF
+from PyQt6.QtCore import Qt, QRectF, QPointF, QPoint
 
 
 class PipeItem(QGraphicsItem):
@@ -42,11 +40,6 @@ class PipeItem(QGraphicsItem):
 
         self.setAcceptHoverEvents(True)
         self.setZValue(-10)  # keep pipes behind nodes
-
-        tip = []
-        if edge_id is not None:
-            tip.append(f"Edge: {edge_id}")
-        self.setToolTip("\n".join(tip) if tip else "Pipe")
 
         # geometry caches
         self._draw_path = QPainterPath()
@@ -91,11 +84,52 @@ class PipeItem(QGraphicsItem):
     def hoverEnterEvent(self, event):
         self._hover = True
         self.update()
+
+        u_id = getattr(self.upstream_item, "node_id", None)
+        d_id = getattr(self.downstream_item, "node_id", None)
+
+        lines = []
+        if self.edge_id is not None:
+            lines.append(f"Pipe: {self.edge_id}")
+        if u_id is not None and d_id is not None:
+            lines.append(f"{u_id} -> {d_id}")
+
+        text = "\n".join(lines) if lines else "Pipe"
+
+        pos = event.screenPos()
+        if hasattr(pos, "toPoint"):
+            pos = pos.toPoint()
+        else:
+            pos = QPoint(int(pos.x()), int(pos.y()))
+
+        QToolTip.showText(pos + QPoint(6, 6), text)
         super().hoverEnterEvent(event)
+
+    def hoverMoveEvent(self, event):
+        u_id = getattr(self.upstream_item, "node_id", None)
+        d_id = getattr(self.downstream_item, "node_id", None)
+
+        lines = []
+        if self.edge_id is not None:
+            lines.append(f"Pipe: {self.edge_id}")
+        if u_id is not None and d_id is not None:
+            lines.append(f"{u_id} -> {d_id}")
+
+        text = "\n".join(lines) if lines else "Pipe"
+
+        pos = event.screenPos()
+        if hasattr(pos, "toPoint"):
+            pos = pos.toPoint()
+        else:
+            pos = QPoint(int(pos.x()), int(pos.y()))
+
+        QToolTip.showText(pos + QPoint(6, 6), text)
+        super().hoverMoveEvent(event)
 
     def hoverLeaveEvent(self, event):
         self._hover = False
         self.update()
+        QToolTip.hideText()
         super().hoverLeaveEvent(event)
 
     # -----------------
