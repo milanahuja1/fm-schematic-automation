@@ -3,21 +3,22 @@ from PyQt6.QtWidgets import QApplication, QMainWindow
 from mainwindow.MainWindow import MainWindow
 from NetworkGenerator import NetworkGenerator
 import os
-import csv
 
+class AppManager:
+    nodePath = None
+    pipePath = None
+    sensorsPath = None
+
+    def createGraph(self):
+        graph = NetworkGenerator.load_edges(appManager.pipePath)
+        nodes = NetworkGenerator.load_nodes_with_xy(appManager.nodePath)
+        window.drawGraph(graph, nodes)
+
+
+appManager = AppManager()
 app = QApplication(sys.argv)
+
 #Instantiates a window
-window = MainWindow()
+window = MainWindow(appManager)
 window.show()
-
-base_dir = os.path.dirname(os.path.abspath(__file__))
-nodePath = os.path.join(base_dir, "data", "nodeTable.csv")
-edgesPath = os.path.join(base_dir, "data", "edgeTable.csv")
-
-graph = NetworkGenerator.load_edges(edgesPath)
-
-
-nodes = NetworkGenerator.load_nodes_with_xy(nodePath)
-window.drawGraph(graph, nodes)
-
 sys.exit(app.exec())
