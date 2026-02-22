@@ -1,8 +1,9 @@
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView
-from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QPainter, QPen
 from PyQt6.QtCore import Qt, QPointF
 
 from SvgNodeFactory import SvgNodeFactory
+
 
 import networkx as nx
 from networkx.drawing.nx_pydot import graphviz_layout
@@ -62,6 +63,28 @@ class NetworkDrawer:
         # --------------------------
         # Draw Pipes
         # --------------------------
+        pen = QPen(Qt.GlobalColor.black)
+        pen.setWidth(1)
+
+        for upstreamNode, outs in graph.items():
+            if upstreamNode not in nodes:
+                continue
+
+            # centres in scene coords (flip Y to match how SVG nodes are drawn)
+            startX = nodes[upstreamNode]["x"]
+            startY = -nodes[upstreamNode]["y"]
+
+            for downstreamNode, edge_id in outs:
+                if downstreamNode not in nodes:
+                    continue
+
+                endX = nodes[downstreamNode]["x"]
+                endY = -nodes[downstreamNode]["y"]
+
+                scene.addLine(startX, startY, endX, endY, pen)
+
+
+
 
 
 

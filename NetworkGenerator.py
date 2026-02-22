@@ -23,24 +23,6 @@ class NetworkGenerator:
         return graph
 
     @staticmethod
-    def load_nodes(filename):
-        """
-        Reads nodes.csv with columns: id,type
-        Returns a dict: { node_id: type }
-        """
-        node_map = {}
-
-        with open(filename, newline="") as file:
-            reader = csv.DictReader(file)
-
-            for row in reader:
-                node_id = row["id"]
-                node_type = int(row["type"])
-                node_map[node_id] = node_type
-
-        return node_map
-
-    @staticmethod
     def load_nodes_with_xy(filename):
         """
         Reads a node CSV with columns: id,type,x,y
