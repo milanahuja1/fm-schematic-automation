@@ -123,15 +123,21 @@ class PipeItem(QGraphicsItem):
         dy = end.y() - start.y()
         angle = math.atan2(dy, dx) if not (dx == 0 and dy == 0) else 0.0
 
+        # Arrowhead placed mid-line, pointing from upstream -> downstream
         a = self.arrow_size
-        p1 = QPointF(end.x(), end.y())
+
+        t = 0.5  # 0.5 = centre; push towards downstream (e.g. 0.6) if you prefer
+        tip_x = start.x() + t * (end.x() - start.x())
+        tip_y = start.y() + t * (end.y() - start.y())
+
+        p1 = QPointF(tip_x, tip_y)
         p2 = QPointF(
-            end.x() - a * math.cos(angle - math.pi / 6.0),
-            end.y() - a * math.sin(angle - math.pi / 6.0),
+            tip_x - a * math.cos(angle - math.pi / 6.0),
+            tip_y - a * math.sin(angle - math.pi / 6.0),
         )
         p3 = QPointF(
-            end.x() - a * math.cos(angle + math.pi / 6.0),
-            end.y() - a * math.sin(angle + math.pi / 6.0),
+            tip_x - a * math.cos(angle + math.pi / 6.0),
+            tip_y - a * math.sin(angle + math.pi / 6.0),
         )
         self._arrow_poly = QPolygonF([p1, p2, p3])
 
