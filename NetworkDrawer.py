@@ -32,6 +32,11 @@ class NetworkDrawer:
         # Auto layout using Graphviz (flow diagram)
         # --------------------------
         G = nx.DiGraph()
+        # Add every node first so that nodes with no edges (e.g. source
+        # monitors with a broken downstream path) still get a Graphviz
+        # position rather than being left at their raw CSV coordinates.
+        for node_id in nodes:
+            G.add_node(str(node_id))
         for upstream, outs in graph.items():
             for downstream, edge_id in outs:
                 G.add_edge(str(upstream), str(downstream))

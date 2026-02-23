@@ -88,14 +88,26 @@ class NetworkGenerator:
         added_edges = set()  # prevent duplicates
         used_nodes = set()
 
+        # Build set of all nodes that appear anywhere in the original graph
+        # (as either an upstream source or a downstream target)
+        all_graph_nodes = set(graph.keys())
+        for outs in graph.values():
+            for downstream, _ in outs:
+                all_graph_nodes.add(downstream)
+
         for start in sensor_nodes:
             reduced_graph[start] = []
 
             # DFS downstream from this sensor node
             stack = [(start, 0)]  # (current_node, path_length)
+            visited = set()  # prevent infinite loops on cyclic graphs
 
             while stack:
                 current, depth = stack.pop()
+
+                if current in visited:
+                    continue
+                visited.add(current)
 
                 if current not in graph:
                     continue
@@ -115,11 +127,14 @@ class NetworkGenerator:
                     # Otherwise keep traversing
                     stack.append((downstream, depth + 1))
 
-        # Ensure nodes with no outgoing edges but that are sensors still appear
+        # Include sensor nodes that appear in the network topology but whose
+        # DFS path to another sensor was broken (e.g. a source monitor with no
+        # upstream sensors and a gap in the edge data between it and the next
+        # downstream sensor).  These nodes will render without pipes until the
+        # edge data is complete, but at least they won't be silently dropped.
         for node in sensor_nodes:
-            if node not in used_nodes and node in reduced_graph:
-                if reduced_graph[node]:
-                    used_nodes.add(node)
+            if node not in used_nodes and node in all_graph_nodes:
+                used_nodes.add(node)
 
         # Build reduced node dictionary in same format as load_nodes_with_xy
         reduced_nodes = {}
