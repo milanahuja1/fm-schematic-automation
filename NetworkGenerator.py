@@ -1,19 +1,39 @@
 import csv
 
+
 class NetworkGenerator:
 
     @staticmethod
     def load_edges(filename):
+        """
+        Reads a pipe/link CSV and returns a directed adjacency list.
 
+        Supports two column formats (auto-detected from headers):
+            Legacy:  upstream, downstream, id
+            Muston:  US node ID, DS node ID, Link suffix
+
+        Returns:
+            { source_node_id: [(target_node_id, edge_id), ...], ... }
+        """
         graph = {}
 
         with open(filename, newline="", encoding="utf-8-sig") as file:
             reader = csv.DictReader(file)
+            headers = reader.fieldnames or []
+
+            # Auto-detect column names
+            if "US node ID" in headers:
+                us_col, ds_col, id_col = "US node ID", "DS node ID", "Link suffix"
+            else:
+                us_col, ds_col, id_col = "upstream", "downstream", "id"
 
             for row in reader:
-                source = row["upstream"]
-                target = row["downstream"]
-                edge_id = row["id"]
+                source = row[us_col].strip()
+                target = row[ds_col].strip()
+                edge_id = row[id_col].strip()
+
+                if not source or not target:
+                    continue
 
                 if source not in graph:
                     graph[source] = []
@@ -25,21 +45,57 @@ class NetworkGenerator:
     @staticmethod
     def load_nodes_with_xy(filename):
         """
-        Reads a node CSV with columns: id,type,x,y
+        Reads a node CSV and returns a node map.
+
+        Supports two column formats (auto-detected from headers):
+            Legacy:  id, type, x, y
+            Muston:  Node ID, Node type, x (m), y (m)
+
+        For the Muston format the string node type is mapped to an integer:
+            "manhole" (and anything unrecognised) -> 1
+
         Returns:
             { node_id: {"type": int, "x": float, "y": float}, ... }
         """
+        # Muston node-type string -> integer mapping
+        NODE_TYPE_MAP = {
+            "manhole": 1,
+        }
+
         node_map = {}
 
         with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
-            # Expecting: id,type,x,y
+            headers = reader.fieldnames or []
+
+            # Auto-detect column names
+            if "Node ID" in headers:
+                id_col, type_col, x_col, y_col = "Node ID", "Node type", "x (m)", "y (m)"
+                muston_format = True
+            else:
+                id_col, type_col, x_col, y_col = "id", "type", "x", "y"
+                muston_format = False
+
             for row in reader:
-                node_id = row["id"]
+                node_id = row[id_col].strip()
+                if not node_id:
+                    continue
+
+                raw_x = row[x_col].strip()
+                raw_y = row[y_col].strip()
+                if not raw_x or not raw_y:
+                    continue
+
+                if muston_format:
+                    raw_type = row[type_col].strip().lower()
+                    node_type = NODE_TYPE_MAP.get(raw_type, 1)
+                else:
+                    node_type = int(row[type_col])
+
                 node_map[node_id] = {
-                    "type": int(row["type"]),
-                    "x": float(row["x"]),
-                    "y": float(row["y"]),
+                    "type": node_type,
+                    "x": float(raw_x),
+                    "y": float(raw_y),
                 }
 
         return node_map
@@ -47,7 +103,12 @@ class NetworkGenerator:
     @staticmethod
     def loadSensorData(filename):
         """
-        Reads a sensor CSV with columns: nodeID,sensorID
+        Reads a sensor/monitor CSV and returns a sensor map.
+
+        Supports two column formats (auto-detected from headers):
+            Legacy:  nodeID, sensorID
+            Muston:  Node ID, Asset ID  (every row in the monitors file is a monitor)
+
         Returns:
             { node_id: [sensor_id, ...], ... }
         """
@@ -55,10 +116,22 @@ class NetworkGenerator:
 
         with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
-            # Expecting: nodeID,sensorID
+            headers = reader.fieldnames or []
+
+            # Auto-detect column names
+            if "Node ID" in headers:
+                id_col = "Node ID"
+                sensor_col = "Asset ID" if "Asset ID" in headers else "Node ID"
+            else:
+                id_col = "nodeID"
+                sensor_col = "sensorID"
+
             for row in reader:
-                node_id = row["nodeID"]
-                sensor_id = row["sensorID"]
+                node_id = row[id_col].strip()
+                sensor_id = row[sensor_col].strip()
+
+                if not node_id:
+                    continue
 
                 if node_id not in sensor_map:
                     sensor_map[node_id] = []
