@@ -7,18 +7,18 @@ class NetworkGenerator:
 
         graph = {}
 
-        with open(filename, newline="") as file:
+        with open(filename, newline="", encoding="utf-8-sig") as file:
             reader = csv.DictReader(file)
 
             for row in reader:
                 source = row["upstream"]
                 target = row["downstream"]
-                weight = float(row["id"])
+                edge_id = row["id"]
 
                 if source not in graph:
                     graph[source] = []
 
-                graph[source].append((target, weight))
+                graph[source].append((target, edge_id))
 
         return graph
 
@@ -31,7 +31,7 @@ class NetworkGenerator:
         """
         node_map = {}
 
-        with open(filename, newline="") as f:
+        with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             # Expecting: id,type,x,y
             for row in reader:
@@ -53,7 +53,7 @@ class NetworkGenerator:
         """
         sensor_map = {}
 
-        with open(filename, newline="") as f:
+        with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             # Expecting: nodeID,sensorID
             for row in reader:
