@@ -30,8 +30,9 @@ class InitialisationScreen(QWidget):
 
     def useSampleData(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.appManager.pipePath = edgesPath = os.path.join(base_dir, "data", "edgeTable.csv")
-        self.appManager.nodePath = os.path.join(base_dir, "data", "nodeTable.csv")
+        self.appManager.pipePath = edgesPath = os.path.join(base_dir, "sampleData", "edgeTable.csv")
+        self.appManager.nodePath = os.path.join(base_dir, "sampleData", "nodeTable.csv")
+        self.appManager.createGraph()
 
 
     def import_nodes(self):

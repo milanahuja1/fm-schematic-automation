@@ -20,8 +20,8 @@ class NetworkDrawer:
             {
                 node_id: {
                     "type": 1|2|3,
-                    "x": float,
-                    "y": float
+                    # optional fields:
+                    "tooltip": str
                 }
             }
 
@@ -35,6 +35,11 @@ class NetworkDrawer:
         for upstream, outs in graph.items():
             for downstream, edge_id in outs:
                 G.add_edge(str(upstream), str(downstream))
+
+        # Ensure x/y exist even if the input nodes table has no coordinates
+        for node_id in nodes:
+            nodes[node_id].setdefault("x", 0.0)
+            nodes[node_id].setdefault("y", 0.0)
 
         if len(G.nodes) > 0:
             pos = graphviz_layout(
@@ -66,8 +71,8 @@ class NetworkDrawer:
         node_items = {}
         for node_id, data in nodes.items():
             node_type = data["type"]
-            x = data["x"]
-            y = -data["y"]
+            x = data.get("x", 0.0)
+            y = -data.get("y", 0.0)
 
             tooltip_text = data.get("tooltip")
 

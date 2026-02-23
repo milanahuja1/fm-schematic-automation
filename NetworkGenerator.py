@@ -3,43 +3,50 @@ import csv
 class NetworkGenerator:
 
     @staticmethod
-    def load_edges(filename):
+    def loadEdges(filename):
 
         graph = {}
 
-        with open(filename, newline="") as file:
+        # Use utf-8-sig to automatically strip BOM if present
+        with open(filename, newline="", encoding="utf-8-sig") as file:
             reader = csv.DictReader(file)
+            # Normalise headers (strip whitespace)
+            if reader.fieldnames:
+                reader.fieldnames = [name.strip() if name else name for name in reader.fieldnames]
 
             for row in reader:
-                source = row["upstream"]
-                target = row["downstream"]
-                weight = float(row["id"])
-
-                if source not in graph:
-                    graph[source] = []
-
-                graph[source].append((target, weight))
-
+                upstream = row["US node ID"]
+                suffix = row["Link suffix"]
+                downstream = row["DS node ID"]
+                link_id = f"{upstream}.{suffix}"
+                if upstream not in graph:
+                    graph[upstream] = []
+                graph[upstream].append((downstream, link_id))
         return graph
 
     @staticmethod
-    def load_nodes_with_xy(filename):
+    def loadNodes(filename):
         """
-        Reads a node CSV with columns: id,type,x,y
+        Reads a node CSV with columns: Node ID, Node type
         Returns:
-            { node_id: {"type": int, "x": float, "y": float}, ... }
+            { node_id: {"type": int}, ... }
         """
-        node_map = {}
+        nodeMap = {}
 
-        with open(filename, newline="") as f:
+        # Use utf-8-sig to automatically strip BOM if present
+        with open(filename, newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
-            # Expecting: id,type,x,y
+
+            # Normalise headers (strip whitespace)
+            if reader.fieldnames:
+                reader.fieldnames = [name.strip() if name else name for name in reader.fieldnames]
+
             for row in reader:
-                node_id = row["id"]
-                node_map[node_id] = {
-                    "type": int(row["type"]),
-                    "x": float(row["x"]),
-                    "y": float(row["y"]),
+                nodeID = row["Node ID"]
+                nodeType = row["Node type"]
+
+                nodeMap[nodeID] = {
+                    "type": nodeType
                 }
 
-        return node_map
+        return nodeMap

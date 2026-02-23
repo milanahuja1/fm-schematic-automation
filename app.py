@@ -10,8 +10,8 @@ class AppManager:
     sensorsPath = None
 
     def createGraph(self):
-        graph = NetworkGenerator.load_edges(appManager.pipePath)
-        nodes = NetworkGenerator.load_nodes_with_xy(appManager.nodePath)
+        graph = NetworkGenerator.loadEdges(appManager.pipePath)
+        nodes = NetworkGenerator.loadNodes(appManager.nodePath)
         window.drawGraph(graph, nodes)
 
 

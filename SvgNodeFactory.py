@@ -1,7 +1,7 @@
 import os
 from PyQt6.QtSvgWidgets import QGraphicsSvgItem
 from PyQt6.QtWidgets import QGraphicsSimpleTextItem
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QGuiApplication, QPalette
 
 
 class SvgNodeItem(QGraphicsSvgItem):
@@ -37,10 +37,13 @@ class SvgNodeItem(QGraphicsSvgItem):
 
 
 class SvgNodeFactory:
+    # Map node "type" values to SVG filenames
     SVG_MAP = {
-        1: "node.svg",
-        2: "greenoval.svg",
-        3: "redtriangle.svg",
+
+        "manhole": "manhole.svg",
+        "weir": "weir.svg",
+        "outfall": "outfall.svg",
+        "storage": "storage.svg",
     }
 
     # folder containing the SVG files
@@ -48,9 +51,20 @@ class SvgNodeFactory:
 
     @staticmethod
     def create(node_id, node_type, x, y, width=50, tooltip_text=None):
-        svg_file = SvgNodeFactory.SVG_MAP.get(int(node_type))
+        key = node_type
+        if isinstance(key, str):
+            key = key.strip().lower()
+        else:
+            # keep ints as-is; attempt to coerce numeric strings handled above
+            try:
+                key = int(key)
+            except Exception:
+                pass
+
+        svg_file = SvgNodeFactory.SVG_MAP.get(key)
         if svg_file is None:
-            raise ValueError(f"Unknown node type: {node_type}")
+            # Fallback to manhole symbol if unknown
+            svg_file = SvgNodeFactory.SVG_MAP.get("manhole", "flowMonitor.svg")
 
         path = os.path.join(SvgNodeFactory.SVG_DIR, svg_file)
         item = SvgNodeItem(path, node_id=node_id, node_type=node_type, tooltip_text=tooltip_text)
@@ -66,9 +80,16 @@ class SvgNodeFactory:
         label = QGraphicsSimpleTextItem(str(node_id), item)
         label.setFlag(label.GraphicsItemFlag.ItemIgnoresTransformations, True)
 
-        font = QFont("Courier New", 12)
+        font = QFont("Fira Code", 12)
         font.setBold(True)
         label.setFont(font)
+
+        # Theme-aware label colour (follows OS light/dark mode)
+        try:
+            label_colour = QGuiApplication.palette().color(QPalette.ColorRole.WindowText)
+            label.setBrush(label_colour)
+        except Exception:
+            pass
 
         # centre label horizontally under the SVG
         svg_bounds = item.boundingRect()

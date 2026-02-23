@@ -1,0 +1,9 @@
+<svg width="80" height="80">
+  <rect x="10"
+        y="10"
+        width="60"
+        height="60"
+        fill="none"
+        stroke="black"
+        stroke-width="3"/>
+</svg>
