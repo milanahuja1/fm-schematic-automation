@@ -11,30 +11,42 @@ from networkx.drawing.nx_pydot import graphviz_layout
 
 class NetworkDrawer:
     @staticmethod
-    def drawNetwork(graph, nodes, monitors):
+    def drawNetwork(conduits, nodes, monitors):
         """
-        graph format:
-            { upstream: [(downstream, edge_id), ...], ... }
-
-        nodes format:
-            {
-                node_id: {
-                    "type": 1|2|3,
-                    # optional fields:
-                    "tooltip": str
-                }
-            }
-
-        Returns:
-            QGraphicsView (ready to embed in a window)
+        conduits format:
+            [
+                {"id": str, "upstream": str, "downstream": str, "type": str},
+                ...
+            ]
         """
         # --------------------------
         # Auto layout using Graphviz (flow diagram)
         # --------------------------
         G = nx.DiGraph()
-        for upstream, outs in graph.items():
-            for downstream, edge_id in outs:
-                G.add_edge(str(upstream), str(downstream))
+        for c in (conduits or []):
+            up = str(c.get("upstream", "")).strip()
+            ds = str(c.get("downstream", "")).strip()
+            if up and ds:
+                G.add_edge(up, ds)
+
+        # --------------------------
+        # DEBUG: Graph diagnostics
+        # --------------------------
+        print("--- GRAPH DEBUG ---")
+        print(f"Total nodes in NetworkX graph: {G.number_of_nodes()}")
+        print(f"Total edges in NetworkX graph: {G.number_of_edges()}")
+
+        # Weakly connected components (ignores direction)
+        weak_components = list(nx.weakly_connected_components(G))
+        print(f"Weakly connected components: {len(weak_components)}")
+
+        # Print first few components for inspection
+        for i, comp in enumerate(weak_components[:5]):
+            print(f"Component {i+1} size: {len(comp)}")
+            print(f"Sample nodes: {list(comp)[:5]}")
+
+        print("-------------------")
+
 
         # Ensure x/y exist even if the input nodes table has no coordinates
         for node_id in nodes:
@@ -69,6 +81,7 @@ class NetworkDrawer:
         # Create SVG node items (store references)
         # --------------------------
         node_items = {}
+        node_items_str = {}
         for node_id, data in nodes.items():
             node_type = data["type"]
 
@@ -85,33 +98,40 @@ class NetworkDrawer:
             item = SvgNodeFactory.create(node_id, node_type, x, y, tooltip_text=tooltip_text)
             scene.addItem(item)
             node_items[node_id] = item
+            node_items_str[str(node_id)] = item
 
         # --------------------------
-        # Create Pipes (edges) and register them on nodes
+        # Create Pipes (conduits) and register them on nodes
         # --------------------------
-        for upstreamNode, outs in graph.items():
-            if upstreamNode not in node_items:
+        for c in (conduits or []):
+            up = str(c.get("upstream", "")).strip()
+            ds = str(c.get("downstream", "")).strip()
+            edge_id = c.get("id")
+
+            if not up or not ds:
                 continue
 
-            for downstreamNode, edge_id in outs:
-                if downstreamNode not in node_items:
-                    continue
+            up_item = node_items_str.get(up)
+            ds_item = node_items_str.get(ds)
 
-                pipe = PipeItem(
-                    upstream_item=node_items[upstreamNode],
-                    downstream_item=node_items[downstreamNode],
-                    edge_id=edge_id,
-                    base_width=1,
-                    hover_width=2,
-                    arrow_size=10.0,
-                    hit_width=12.0,
-                    draw_label=False,
-                )
-                scene.addItem(pipe)
+            if up_item is None or ds_item is None:
+                continue
 
-                # Either endpoint moving should update the pipe
-                node_items[upstreamNode].connectedPipes.append(pipe)
-                node_items[downstreamNode].connectedPipes.append(pipe)
+            pipe = PipeItem(
+                upstream_item=up_item,
+                downstream_item=ds_item,
+                edge_id=edge_id,
+                base_width=1,
+                hover_width=2,
+                arrow_size=10.0,
+                hit_width=12.0,
+                draw_label=False,
+            )
+            scene.addItem(pipe)
+
+            # Either endpoint moving should update the pipe
+            up_item.connectedPipes.append(pipe)
+            ds_item.connectedPipes.append(pipe)
 
         view = QGraphicsView(scene)
         view.setRenderHint(QPainter.RenderHint.Antialiasing, True)

@@ -8,12 +8,32 @@ class AppManager:
     nodePath = None
     pipePath = None
     monitorsPath = None
+    userControlPath = None
+    flumePath = None
+    flapValvePath = None
+    orficePath = None
+    pumpPath = None
+    sluicePath = None
+    weirPath = None
+
 
     def createGraph(self):
-        graph = NetworkGenerator.loadEdges(appManager.pipePath)
         nodes = NetworkGenerator.loadNodes(appManager.nodePath)
         monitors = NetworkGenerator.loadMonitors(appManager.monitorsPath)
-        window.drawGraph(graph, nodes, monitors)
+
+        #load in conduits:
+        links = NetworkGenerator.loadEdges(appManager.pipePath)
+        userControls = NetworkGenerator.loadEdges(appManager.userControlPath)
+        flumes = NetworkGenerator.loadEdges(appManager.flumePath)
+        flapValves = NetworkGenerator.loadEdges(appManager.flapValvePath)
+        orfices = NetworkGenerator.loadEdges(appManager.orficePath)
+        pumps = NetworkGenerator.loadEdges(appManager.pumpPath)
+        sluices = NetworkGenerator.loadEdges(appManager.sluicePath)
+        weirs = NetworkGenerator.loadEdges(appManager.weirPath)
+
+        conduits = NetworkGenerator.generateConduits(links,userControls,flumes,flapValves,orfices,pumps,sluices,weirs)
+
+        window.drawGraph(conduits, nodes, monitors)
 
 
 appManager = AppManager()

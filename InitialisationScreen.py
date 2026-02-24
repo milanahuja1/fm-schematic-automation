@@ -30,9 +30,19 @@ class InitialisationScreen(QWidget):
 
     def useSampleData(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.appManager.pipePath = edgesPath = os.path.join(base_dir, "sampleData", "Muston_Links.csv")
         self.appManager.nodePath = os.path.join(base_dir, "sampleData", "Muston_Nodes.csv")
         self.appManager.monitorsPath = os.path.join(base_dir, "sampleData", "Muston_Monitors.csv")
+        #conduits:
+        self.appManager.pipePath = os.path.join(base_dir, "sampleData", "Muston_Links.csv")
+        self.appManager.userControlPath = os.path.join(base_dir, "sampleData", "User_Control.csv")
+        self.appManager.flumePath = os.path.join(base_dir, "sampleData", "Muston_flumes.csv")
+        self.appManager.flapValvePath = os.path.join(base_dir, "sampleData", "Muston_Flap_Valve.csv")
+        self.appManager.orficePath = os.path.join(base_dir, "sampleData", "Muston_Orifices.csv")
+        self.appManager.pumpPath = os.path.join(base_dir, "sampleData", "Muston_Pumps.csv")
+        self.appManager.sluicePath = os.path.join(base_dir, "sampleData", "Muston_Sluice.csv")
+        self.appManager.weirPath = os.path.join(base_dir, "sampleData", "Muston_Weirs.csv")
+
+
         self.appManager.createGraph()
 
 
