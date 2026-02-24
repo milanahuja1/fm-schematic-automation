@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView, QMainWindow
 from SvgNodeFactory import SvgNodeFactory
 from NetworkDrawer import NetworkDrawer
 from InitialisationScreen import InitialisationScreen
+from ConfigureMonitorsScreen import ConfigureMonitorsScreen
 
 class MainWindow(QMainWindow):
     def __init__(self, appManager):
@@ -17,3 +18,6 @@ class MainWindow(QMainWindow):
 
     def initialiseParameters(self):
         self.setCentralWidget(InitialisationScreen(self.appManager))
+
+    def configureMonitors(self, monitors):
+        self.setCentralWidget(ConfigureMonitorsScreen(self.appManager,monitors))

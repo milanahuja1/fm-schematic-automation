@@ -32,8 +32,8 @@ class AppManager:
         weirs = NetworkGenerator.loadEdges(appManager.weirPath)
 
         conduits = NetworkGenerator.generateConduits(links,userControls,flumes,flapValves,orfices,pumps,sluices,weirs)
-
-        window.drawGraph(conduits, nodes, monitors, compressed=True)
+        window.configureMonitors(monitors)
+        #window.drawGraph(conduits, nodes, monitors, compressed=True)
 
 
 appManager = AppManager()

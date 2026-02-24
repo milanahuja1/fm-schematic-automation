@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1074</width>
+    <height>705</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QPushButton" name="createGraphButton">
+   <property name="geometry">
+    <rect>
+     <x>960</x>
+     <y>480</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Fira Code</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">    QPushButton {
+        background-color: #1f77b4;
+        color: white;
+	border-radius: 5px;
+    }</string>
+   </property>
+   <property name="text">
+    <string>OK</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="importWeirButton">
+   <property name="geometry">
+    <rect>
+     <x>310</x>
+     <y>500</y>
+     <width>181</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Fira Code</family>
+    </font>
+   </property>
+   <property name="text">
+    <string>Import Weir</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="importWeirLabel">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>510</y>
+     <width>561</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Fira Code</family>
+     <pointsize>10</pointsize>
+     <bold>false</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>No file selected</string>
+   </property>
+  </widget>
+  <widget class="QWidget" name="verticalLayoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>60</x>
+     <y>30</y>
+     <width>961</width>
+     <height>441</height>
+    </rect>
+   </property>
+   <layout class="QVBoxLayout" name="verticalLayout"/>
+  </widget>
+  <widget class="QPushButton" name="createGraphButton_2">
+   <property name="geometry">
+    <rect>
+     <x>880</x>
+     <y>480</y>
+     <width>61</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>Fira Code</family>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">    QPushButton {
+        background-color: #1f77b4;
+        color: white;
+	border-radius: 5px;
+    }</string>
+   </property>
+   <property name="text">
+    <string>Close</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
