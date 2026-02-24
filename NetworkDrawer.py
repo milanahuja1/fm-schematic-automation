@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QGraphicsScene, QGraphicsView
-from PyQt6.QtGui import QPainter
+from PyQt6.QtGui import QPainter, QColor
 from PyQt6.QtCore import Qt
 
 from SvgNodeFactory import SvgNodeFactory
@@ -19,6 +19,7 @@ class NetworkDrawer:
                 ...
             ]
         """
+
         # --------------------------
         # Auto layout using Graphviz (flow diagram)
         # --------------------------
@@ -36,17 +37,14 @@ class NetworkDrawer:
         print(f"Total nodes in NetworkX graph: {G.number_of_nodes()}")
         print(f"Total edges in NetworkX graph: {G.number_of_edges()}")
 
-        # Weakly connected components (ignores direction)
         weak_components = list(nx.weakly_connected_components(G))
         print(f"Weakly connected components: {len(weak_components)}")
 
-        # Print first few components for inspection
         for i, comp in enumerate(weak_components[:5]):
             print(f"Component {i+1} size: {len(comp)}")
             print(f"Sample nodes: {list(comp)[:5]}")
 
         print("-------------------")
-
 
         # Ensure x/y exist even if the input nodes table has no coordinates
         for node_id in nodes:
@@ -59,7 +57,6 @@ class NetworkDrawer:
                 prog="dot",
             )
 
-            # Some NetworkX versions (nx_pydot) don't support passing Graphviz args.
             # `dot` defaults to a top-to-bottom layout. To mimic LR flow, swap axes.
             pos = {n: (y, x) for n, (x, y) in pos.items()}
 
@@ -103,10 +100,23 @@ class NetworkDrawer:
         # --------------------------
         # Create Pipes (conduits) and register them on nodes
         # --------------------------
+        conduit_colours = {
+            "link": QColor("#7a7a7a"),
+            "user_control": QColor("#9467bd"),
+            "flap_valve": QColor("#8c564b"),
+            "pump": QColor("#d62728"),
+            "sluice": QColor("#ff7f0e"),
+            "weir": QColor("#1f77b4"),
+            "flume": QColor("#2ca02c"),
+            "orifice": QColor("#bcbd22"),
+        }
+
         for c in (conduits or []):
             up = str(c.get("upstream", "")).strip()
             ds = str(c.get("downstream", "")).strip()
             edge_id = c.get("id")
+            ctype = str(c.get("type", "link")).strip().lower()
+            colour = conduit_colours.get(ctype, conduit_colours["link"])
 
             if not up or not ds:
                 continue
@@ -121,6 +131,7 @@ class NetworkDrawer:
                 upstream_item=up_item,
                 downstream_item=ds_item,
                 edge_id=edge_id,
+                pen_colour=colour,
                 base_width=1,
                 hover_width=2,
                 arrow_size=10.0,
@@ -129,7 +140,6 @@ class NetworkDrawer:
             )
             scene.addItem(pipe)
 
-            # Either endpoint moving should update the pipe
             up_item.connectedPipes.append(pipe)
             ds_item.connectedPipes.append(pipe)
 

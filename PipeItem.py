@@ -1,6 +1,6 @@
 import math
 from PyQt6.QtWidgets import QGraphicsItem, QToolTip
-from PyQt6.QtGui import QPen, QBrush, QPainterPath, QPolygonF
+from PyQt6.QtGui import QPen, QBrush, QPainterPath, QPolygonF, QColor
 from PyQt6.QtCore import Qt, QRectF, QPointF, QPoint
 
 
@@ -18,6 +18,7 @@ class PipeItem(QGraphicsItem):
         upstream_item: QGraphicsItem,
         downstream_item: QGraphicsItem,
         edge_id=None,
+        pen_colour=None,
         base_width: int = 1,
         hover_width: int = 2,
         arrow_size: float = 10.0,
@@ -29,6 +30,7 @@ class PipeItem(QGraphicsItem):
         self.upstream_item = upstream_item
         self.downstream_item = downstream_item
         self.edge_id = edge_id
+        self.pen_colour = pen_colour
 
         self.base_width = int(base_width)
         self.hover_width = int(hover_width)
@@ -63,18 +65,28 @@ class PipeItem(QGraphicsItem):
     def paint(self, painter, option, widget=None):
         painter.setRenderHint(painter.RenderHint.Antialiasing, True)
 
-        pen = QPen(Qt.GlobalColor.black)
+        colour = self.pen_colour
+        if isinstance(colour, str):
+            colour = QColor(colour)
+
+        if colour is None:
+            pen = QPen(Qt.GlobalColor.black)
+            brush = QBrush(Qt.GlobalColor.black)
+        else:
+            pen = QPen(colour)
+            brush = QBrush(colour)
+
         pen.setWidth(self.hover_width if self._hover else self.base_width)
         pen.setCosmetic(True)
         painter.setPen(pen)
 
         painter.drawPath(self._draw_path)
 
-        painter.setBrush(QBrush(Qt.GlobalColor.black))
+        painter.setBrush(brush)
         painter.drawPolygon(self._arrow_poly)
 
         if self.draw_label and self.edge_id is not None and self._label_pos is not None:
-            painter.setPen(Qt.GlobalColor.black)
+            painter.setPen(pen)
             painter.drawText(self._label_pos, str(self.edge_id))
 
     # -----------------

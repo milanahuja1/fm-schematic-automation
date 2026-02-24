@@ -22,6 +22,7 @@ class NetworkGenerator:
                 if upstream not in graph:
                     graph[upstream] = []
                 graph[upstream].append((downstream, link_id))
+                print(graph[upstream])
         return graph
 
     @staticmethod
@@ -79,94 +80,48 @@ class NetworkGenerator:
 
     @staticmethod
     def generateConduits(links, userControls, flumes, flapValves, orfices, pumps, sluices, weirs):
-        """Create a unified list of conduit records for drawing.
-
-        Args:
-            links: adjacency dict in the same format as `loadEdges` returns:
-                { upstream: [(downstream, link_id), ...], ... }
-            userControls/flumes/flapValves/orfices/pumps/sluices/weirs:
-                Datasets describing special conduit types. These can be:
-                - dicts keyed by link id (common)
-                - sets of link ids
-                - lists/tuples of link ids
-                - None
-
-        Returns:
-            conduits: list of dicts:
-                [{"id": str, "upstream": str, "downstream": str, "type": str}, ...]
+        """
+        Merge all conduit datasets into one unified conduit list.
+        Each dataset is expected to be in the adjacency format returned by loadEdges:
+            { upstream: [(downstream, link_id), ...], ... }
         """
 
-        def _id_set(obj):
-            if obj is None:
-                return set()
-
-            # If it's an adjacency dict like loadEdges: {upstream: [(downstream, link_id), ...], ...}
-            if isinstance(obj, dict):
-                ids = set()
-                looks_like_adj = False
-
-                for outs in obj.values():
-                    if isinstance(outs, list) and outs:
-                        first = outs[0]
-                        if isinstance(first, tuple) and len(first) >= 2:
-                            looks_like_adj = True
-
-                    if isinstance(outs, list):
-                        for item in outs:
-                            if isinstance(item, tuple) and len(item) >= 2:
-                                ids.add(str(item[1]).strip())
-
-                if looks_like_adj:
-                    return ids
-
-                # Otherwise assume dict is keyed by id
-                return set(str(k).strip() for k in obj.keys())
-
-            # If it's already an iterable of ids
-            try:
-                return set(str(x).strip() for x in obj)
-            except TypeError:
-                return set()
-
-        userControlIDs = _id_set(userControls)
-        flumeIDs = _id_set(flumes)
-        flapValveIDs = _id_set(flapValves)
-        orificeIDs = _id_set(orfices)
-        pumpIDs = _id_set(pumps)
-        sluiceIDs = _id_set(sluices)
-        weirIDs = _id_set(weirs)
-
         conduits = []
+        seen_ids = set()
 
-        # Flatten the adjacency list into a single conduit list
-        for upstream, outs in (links or {}).items():
-            up = str(upstream).strip()
-            for downstream, link_id in outs:
-                ds = str(downstream).strip()
-                lid = str(link_id).strip()
+        def _add_dataset(dataset, conduit_type):
+            if not dataset:
+                return
 
-                # Determine conduit type (priority order)
-                conduitType = "link"
-                if lid in userControlIDs:
-                    conduitType = "user_control"
-                elif lid in flapValveIDs:
-                    conduitType = "flap_valve"
-                elif lid in pumpIDs:
-                    conduitType = "pump"
-                elif lid in sluiceIDs:
-                    conduitType = "sluice"
-                elif lid in weirIDs:
-                    conduitType = "weir"
-                elif lid in flumeIDs:
-                    conduitType = "flume"
-                elif lid in orificeIDs:
-                    conduitType = "orifice"
+            for upstream, outs in dataset.items():
+                up = str(upstream).strip()
+                for downstream, link_id in outs:
+                    ds = str(downstream).strip()
+                    lid = str(link_id).strip()
 
-                conduits.append({
-                    "id": lid,
-                    "upstream": up,
-                    "downstream": ds,
-                    "type": conduitType,
-                })
+                    # Avoid duplicates (special types override plain links)
+                    if lid in seen_ids:
+                        continue
+
+                    conduits.append({
+                        "id": lid,
+                        "upstream": up,
+                        "downstream": ds,
+                        "type": conduit_type,
+                    })
+
+                    seen_ids.add(lid)
+
+        # Add specialised conduit types first (so they take priority)
+        _add_dataset(userControls, "user_control")
+        _add_dataset(flapValves, "flap_valve")
+        _add_dataset(pumps, "pump")
+        _add_dataset(sluices, "sluice")
+        _add_dataset(weirs, "weir")
+        _add_dataset(flumes, "flume")
+        _add_dataset(orfices, "orifice")
+
+        # Finally add plain links (only if not already added)
+        _add_dataset(links, "link")
 
         return conduits
