@@ -11,7 +11,7 @@ class AppManager:
     userControlPath = None
     flumePath = None
     flapValvePath = None
-    orficePath = None
+    orificePath = None
     pumpPath = None
     sluicePath = None
     weirPath = None
@@ -26,7 +26,7 @@ class AppManager:
         userControls = NetworkGenerator.loadEdges(appManager.userControlPath)
         flumes = NetworkGenerator.loadEdges(appManager.flumePath)
         flapValves = NetworkGenerator.loadEdges(appManager.flapValvePath)
-        orfices = NetworkGenerator.loadEdges(appManager.orficePath)
+        orfices = NetworkGenerator.loadEdges(appManager.orificePath)
         pumps = NetworkGenerator.loadEdges(appManager.pumpPath)
         sluices = NetworkGenerator.loadEdges(appManager.sluicePath)
         weirs = NetworkGenerator.loadEdges(appManager.weirPath)

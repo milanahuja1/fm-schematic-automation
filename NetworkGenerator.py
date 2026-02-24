@@ -6,6 +6,9 @@ class NetworkGenerator:
     def loadEdges(filename):
 
         graph = {}
+        # Allow optional conduit files: if no filename provided, return empty graph
+        if filename is None or str(filename).strip() == "":
+            return graph
 
         # Use utf-8-sig to automatically strip BOM if present
         with open(filename, newline="", encoding="utf-8-sig") as file:
@@ -22,7 +25,6 @@ class NetworkGenerator:
                 if upstream not in graph:
                     graph[upstream] = []
                 graph[upstream].append((downstream, link_id))
-                print(graph[upstream])
         return graph
 
     @staticmethod
