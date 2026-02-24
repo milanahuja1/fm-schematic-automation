@@ -104,14 +104,14 @@ class NetworkGenerator:
 
 
     @staticmethod
-    def generateConduits(links, userControls, flumes, flapValves, orfices, pumps, sluices, weirs):
+    def generateLinks(links, userControls, flumes, flapValves, orfices, pumps, sluices, weirs):
         """
         Merge all conduit datasets into one unified conduit list.
         Each dataset is expected to be in the adjacency format returned by loadEdges:
             { upstream: [(downstream, link_id), ...], ... }
         """
 
-        conduits = []
+        all_links = []
         seen_ids = set()
 
         def _add_dataset(dataset, conduit_type):
@@ -128,7 +128,7 @@ class NetworkGenerator:
                     if lid in seen_ids:
                         continue
 
-                    conduits.append({
+                    all_links.append({
                         "id": lid,
                         "upstream": up,
                         "downstream": ds,
@@ -146,7 +146,7 @@ class NetworkGenerator:
         _add_dataset(flumes, "flume")
         _add_dataset(orfices, "orifice")
 
-        # Finally add plain links (only if not already added)
-        _add_dataset(links, "link")
+        # Finally add plain conduits (plain pipes)
+        _add_dataset(links, "conduit")
 
-        return conduits
+        return all_links

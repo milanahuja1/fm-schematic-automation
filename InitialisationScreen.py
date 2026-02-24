@@ -25,10 +25,10 @@ class InitialisationScreen(QWidget):
         self.createGraphButton.clicked.connect(self.createGraph)
 
 
-        # Conduit import mapping (button name -> label + appManager path attribute)
+        # Links import mapping (button name -> label + appManager path attribute)
         # Note: "links" are the base pipes network.
-        self.conduitButtonMap = {
-            "importLinkButton": {"label": "importLinkLabel", "path_attr": "pipePath", "title": "Select Links CSV"},
+        self.linkButtonMap = {
+            "importConduitButton": {"label": "importConduitLabel", "path_attr": "conduitPath", "title": "Select Links CSV"},
             "importUserControlButton": {"label": "importUserControlLabel", "path_attr": "userControlPath", "title": "Select User Control CSV"},
             "importFlumeButton": {"label": "importFlumeLabel", "path_attr": "flumePath", "title": "Select Flumes CSV"},
             "importFlapValveButton": {"label": "importFlapValveLabel", "path_attr": "flapValvePath", "title": "Select Flap Valves CSV"},
@@ -42,7 +42,7 @@ class InitialisationScreen(QWidget):
         self.conduit_files = {}
 
         # Connect all conduit import buttons to one handler
-        for button_name in self.conduitButtonMap:
+        for button_name in self.linkButtonMap:
             btn = getattr(self, button_name, None)
             if btn is not None:
                 btn.clicked.connect(self.importConduit)
@@ -54,8 +54,8 @@ class InitialisationScreen(QWidget):
         base_dir = os.path.dirname(os.path.abspath(__file__))
         self.appManager.nodePath = os.path.join(base_dir, "sampleData", "Muston_Nodes.csv")
         self.appManager.monitorsPath = os.path.join(base_dir, "sampleData", "Muston_Monitors.csv")
-        #conduits:
-        self.appManager.pipePath = os.path.join(base_dir, "sampleData", "Muston_Links.csv")
+        #links:
+        self.appManager.conduitPath = os.path.join(base_dir, "sampleData", "Muston_Links.csv")
         self.appManager.userControlPath = os.path.join(base_dir, "sampleData", "User_Control.csv")
         self.appManager.flumePath = os.path.join(base_dir, "sampleData", "Muston_flumes.csv")
         self.appManager.flapValvePath = os.path.join(base_dir, "sampleData", "Muston_Flap_Valve.csv")
@@ -64,9 +64,7 @@ class InitialisationScreen(QWidget):
         self.appManager.sluicePath = os.path.join(base_dir, "sampleData", "Muston_Sluice.csv")
         self.appManager.weirPath = os.path.join(base_dir, "sampleData", "Muston_Weirs.csv")
 
-
         self.appManager.createGraph()
-
 
     def importNodes(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -87,7 +85,7 @@ class InitialisationScreen(QWidget):
             return
 
         button_name = btn.objectName()
-        config = self.conduitButtonMap.get(button_name)
+        config = self.linkButtonMap.get(button_name)
         if config is None:
             return
 

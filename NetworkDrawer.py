@@ -56,7 +56,7 @@ class NetworkDrawer:
                                 "id": f"{start}_to_{node}",
                                 "upstream": start,
                                 "downstream": node,
-                                "type": "link",
+                                "type": "conduit",
                             })
                     else:
                         next_frontier.extend(G.successors(node))
@@ -74,9 +74,6 @@ class NetworkDrawer:
             nid: data for nid, data in nodes.items()
             if str(nid) in edge_node_ids or nid in edge_node_ids
         }
-
-        print(f"--- COMPRESSION: {len(nodes)} nodes → {len(compressed_nodes)}, "
-              f"{len(conduits or [])} conduits → {len(compressed_conduits)} ---")
 
         return compressed_conduits, compressed_nodes
 
@@ -324,8 +321,8 @@ class NetworkDrawer:
         # --------------------------
         # Create Pipes (conduits) and register them on nodes
         # --------------------------
-        conduit_colours = {
-            "link": QColor("#7a7a7a"),
+        linkColours = {
+            "conduit": QColor("#7a7a7a"),
             "user_control": QColor("#9467bd"),
             "flap_valve": QColor("#8c564b"),
             "pump": QColor("#d62728"),
@@ -340,7 +337,7 @@ class NetworkDrawer:
             ds = str(c.get("downstream", "")).strip()
             edge_id = c.get("id")
             ctype = str(c.get("type", "link")).strip().lower()
-            colour = conduit_colours.get(ctype, conduit_colours["link"])
+            colour = linkColours.get(ctype, linkColours["conduit"])
 
             if not up or not ds:
                 continue

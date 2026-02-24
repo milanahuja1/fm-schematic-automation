@@ -93,7 +93,7 @@
     <string>Import Nodes</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="importLinkButton">
+  <widget class="QPushButton" name="importConduitButton">
    <property name="geometry">
     <rect>
      <x>310</x>
@@ -108,7 +108,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Import Links</string>
+    <string>Import Conduits</string>
    </property>
   </widget>
   <widget class="QLabel" name="importNodeLabel">
@@ -131,7 +131,7 @@
     <string>No file selected</string>
    </property>
   </widget>
-  <widget class="QLabel" name="importLinkLabel">
+  <widget class="QLabel" name="importConduitLabel">
    <property name="geometry">
     <rect>
      <x>510</x>

@@ -19,5 +19,5 @@ class MainWindow(QMainWindow):
     def initialiseParameters(self):
         self.setCentralWidget(InitialisationScreen(self.appManager))
 
-    def configureMonitors(self, monitors):
-        self.setCentralWidget(ConfigureMonitorsScreen(self.appManager,monitors))
+    def configureMonitors(self, monitors,links):
+        self.setCentralWidget(ConfigureMonitorsScreen(self.appManager,monitors,links))
