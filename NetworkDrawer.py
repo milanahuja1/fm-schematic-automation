@@ -5,6 +5,7 @@ from PyQt6.QtCore import Qt
 from SvgNodeFactory import SvgNodeFactory
 from PipeItem import PipeItem
 
+import math
 import networkx as nx
 from networkx.drawing.nx_pydot import graphviz_layout
 
@@ -61,12 +62,48 @@ class NetworkDrawer:
                         next_frontier.extend(G.successors(node))
                 frontier = next_frontier
 
-        compressed_nodes = {nid: data for nid, data in nodes.items() if is_important(nid)}
+        # Only keep nodes that are actually referenced by a compressed edge.
+        # This drops important-typed nodes (e.g. outfalls) that have no path
+        # to or from any monitor.
+        edge_node_ids = set()
+        for c in compressed_conduits:
+            edge_node_ids.add(c["upstream"])
+            edge_node_ids.add(c["downstream"])
+
+        compressed_nodes = {
+            nid: data for nid, data in nodes.items()
+            if str(nid) in edge_node_ids or nid in edge_node_ids
+        }
 
         print(f"--- COMPRESSION: {len(nodes)} nodes → {len(compressed_nodes)}, "
               f"{len(conduits or [])} conduits → {len(compressed_conduits)} ---")
 
         return compressed_conduits, compressed_nodes
+
+    @staticmethod
+    def _spreadStackedNodes(nodes, threshold=25.0, radius=35.0):
+        """
+        Detect nodes whose screen positions are within `threshold` pixels of each
+        other and spread them evenly around a circle of `radius` pixels so they
+        don't render on top of one another.
+        """
+        from collections import defaultdict
+
+        # Bucket nodes by position cell so we only compare nearby nodes
+        buckets = defaultdict(list)
+        for nid, data in nodes.items():
+            bx = round(data["x"] / threshold)
+            by = round(data["y"] / threshold)
+            buckets[(bx, by)].append(nid)
+
+        for nids in buckets.values():
+            if len(nids) > 1:
+                cx = sum(nodes[n]["x"] for n in nids) / len(nids)
+                cy = sum(nodes[n]["y"] for n in nids) / len(nids)
+                for i, nid in enumerate(nids):
+                    angle = 2 * math.pi * i / len(nids)
+                    nodes[nid]["x"] = cx + radius * math.cos(angle)
+                    nodes[nid]["y"] = cy + radius * math.sin(angle)
 
     @staticmethod
     def drawNetwork(conduits, nodes, monitors, compressed=False):
@@ -150,6 +187,9 @@ class NetworkDrawer:
                     x, y = pos[sid]
                     nodes[node_id]["x"] = (x - min_x) * scale
                     nodes[node_id]["y"] = (y - min_y) * scale
+
+        # Spread any nodes that landed on top of each other
+        NetworkDrawer._spreadStackedNodes(nodes)
 
         scene = QGraphicsScene()
 
