@@ -114,18 +114,34 @@ class NetworkDrawer:
             nodes[node_id].setdefault("x", 0.0)
             nodes[node_id].setdefault("y", 0.0)
 
-        if len(G.nodes) > 0:
-            pos = graphviz_layout(
-                G,
-                prog="dot",
-            )
+        # --------------------------
+        # Layout: spatial (real-world coords) or Graphviz fallback
+        # --------------------------
+        all_x = [nodes[n]["x"] for n in nodes]
+        all_y = [nodes[n]["y"] for n in nodes]
+        non_zero = sum(1 for x, y in zip(all_x, all_y) if x != 0.0 or y != 0.0)
+        use_spatial = len(nodes) > 0 and non_zero > len(nodes) * 0.5
+
+        if use_spatial:
+            # Scale real-world coordinates to screen space, preserving aspect ratio
+            min_x, max_x = min(all_x), max(all_x)
+            min_y, max_y = min(all_y), max(all_y)
+            range_x = max_x - min_x or 1.0
+            range_y = max_y - min_y or 1.0
+            target = 2000.0  # canvas size in pixels
+            scale = target / max(range_x, range_y)
+            for data in nodes.values():
+                data["x"] = (data["x"] - min_x) * scale
+                data["y"] = (data["y"] - min_y) * scale
+
+        elif len(G.nodes) > 0:
+            pos = graphviz_layout(G, prog="dot")
 
             # `dot` defaults to a top-to-bottom layout. To mimic LR flow, swap axes.
             pos = {n: (y, x) for n, (x, y) in pos.items()}
 
             min_x = min(x for x, y in pos.values())
             min_y = min(y for x, y in pos.values())
-
             scale = 1.5
 
             for node_id in nodes:

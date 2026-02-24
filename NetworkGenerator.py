@@ -30,9 +30,14 @@ class NetworkGenerator:
     @staticmethod
     def loadNodes(filename):
         """
-        Reads a node CSV with columns: Node ID, Node type
+        Reads a node CSV with columns:
+            - Node ID
+            - Node type
+            - x (m)  (optional)
+            - y (m)  (optional)
+
         Returns:
-            { node_id: {"type": int}, ... }
+            { node_id: {"type": str, "x": float, "y": float}, ... }
         """
         nodeMap = {}
 
@@ -47,8 +52,26 @@ class NetworkGenerator:
             for row in reader:
                 nodeID = row["Node ID"]
                 nodeType = row["Node type"]
+
+                # Optional coordinates
+                x_raw = row.get("x (m)")
+                y_raw = row.get("y (m)")
+
+                def _to_float(val):
+                    if val is None:
+                        return 0.0
+                    s = str(val).strip()
+                    if s == "":
+                        return 0.0
+                    try:
+                        return float(s)
+                    except ValueError:
+                        return 0.0
+
                 nodeMap[nodeID] = {
-                    "type": nodeType
+                    "type": str(nodeType).strip(),
+                    "x": _to_float(x_raw),
+                    "y": _to_float(y_raw),
                 }
         return nodeMap
 
