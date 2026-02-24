@@ -124,6 +124,101 @@ class NetworkDrawer:
                 break
 
     @staticmethod
+    def _fixedLengthLayout(nodes, conduits, edge_px=150.0):
+        """
+        Place nodes so every display edge is exactly edge_px pixels long,
+        while using real-world coordinates to determine the direction of each hop.
+
+        Uses a topological traversal (Kahn's algorithm) so every node is placed
+        only after all its upstream parents have been placed. Nodes with multiple
+        upstream parents get the average of all parent suggestions, which handles
+        confluences naturally.
+
+        Disconnected sub-graphs and any nodes caught in cycles are placed in a
+        row below the main layout.
+        """
+        from collections import defaultdict, deque
+
+        if not nodes:
+            return
+
+        by_str = {str(nid): nid for nid in nodes}
+        all_str = set(by_str.keys())
+
+        # Build directed adjacency and track in-degrees
+        out_adj = defaultdict(list)
+        in_adj  = defaultdict(list)
+        for c in (conduits or []):
+            u = str(c.get("upstream",   "")).strip()
+            d = str(c.get("downstream", "")).strip()
+            if u in by_str and d in by_str and u != d:
+                out_adj[u].append(d)
+                in_adj[d].append(u)
+
+        in_degree   = {n: len(in_adj[n]) for n in all_str}
+        suggestions = defaultdict(list)   # node_str -> [(x, y), ...]
+        placed      = {}                  # node_str -> (x, y)
+
+        # Seed root nodes (no incoming edges) spread horizontally
+        roots = sorted(n for n in all_str if in_degree[n] == 0)
+        for i, root in enumerate(roots):
+            suggestions[root].append((i * edge_px * 2.5, 0.0))
+
+        queue = deque(roots)
+
+        while queue:
+            u = queue.popleft()
+
+            if u in placed:
+                continue
+
+            # Wait until all parents have been placed
+            if any(p not in placed for p in in_adj[u]):
+                queue.append(u)   # re-enqueue; will retry once parents land
+                continue
+
+            # Average all parent suggestions (or the seed for roots)
+            sx = sum(s[0] for s in suggestions[u]) / len(suggestions[u])
+            sy = sum(s[1] for s in suggestions[u]) / len(suggestions[u])
+            placed[u] = (sx, sy)
+
+            u_data = nodes[by_str[u]]
+
+            for d in out_adj[u]:
+                if d in placed:
+                    continue
+
+                d_data = nodes[by_str[d]]
+                wdx = d_data["x"] - u_data["x"]
+                wdy = d_data["y"] - u_data["y"]
+                wdist = math.sqrt(wdx * wdx + wdy * wdy)
+
+                if wdist < 1e-6:
+                    # Co-located in the world: default to flowing right
+                    wdx, wdy, wdist = 1.0, 0.0, 1.0
+
+                suggestions[d].append((
+                    sx + edge_px * wdx / wdist,
+                    sy + edge_px * wdy / wdist,
+                ))
+
+                in_degree[d] -= 1
+                if in_degree[d] == 0:
+                    queue.append(d)
+
+        # Place any remaining nodes (cycles / disconnected islands)
+        unplaced = all_str - set(placed)
+        if unplaced:
+            max_y = max((placed[n][1] for n in placed), default=0)
+            for i, nid in enumerate(sorted(unplaced)):
+                placed[nid] = (i * edge_px, max_y + edge_px * 2)
+
+        # Write back to the nodes dict
+        for sid, (x, y) in placed.items():
+            nodes[by_str[sid]]["x"] = x
+            nodes[by_str[sid]]["y"] = y
+
+    @staticmethod
     def drawNetwork(conduits, nodes, monitors, compressed=False):
         """
         conduits format:
@@ -178,16 +273,8 @@ class NetworkDrawer:
         use_spatial = len(nodes) > 0 and non_zero > len(nodes) * 0.5
 
         if use_spatial:
-            # Scale real-world coordinates to screen space, preserving aspect ratio
-            min_x, max_x = min(all_x), max(all_x)
-            min_y, max_y = min(all_y), max(all_y)
-            range_x = max_x - min_x or 1.0
-            range_y = max_y - min_y or 1.0
-            target = 2000.0  # canvas size in pixels
-            scale = target / max(range_x, range_y)
-            for data in nodes.values():
-                data["x"] = (data["x"] - min_x) * scale
-                data["y"] = (data["y"] - min_y) * scale
+            # Fixed-length layout: every edge = 150 px, direction from real-world coords
+            NetworkDrawer._fixedLengthLayout(nodes, conduits)
 
         elif len(G.nodes) > 0:
             pos = graphviz_layout(G, prog="dot")
