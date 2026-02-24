@@ -7,12 +7,13 @@ import os
 class AppManager:
     nodePath = None
     pipePath = None
-    sensorsPath = None
+    monitorsPath = None
 
     def createGraph(self):
         graph = NetworkGenerator.loadEdges(appManager.pipePath)
         nodes = NetworkGenerator.loadNodes(appManager.nodePath)
-        window.drawGraph(graph, nodes)
+        monitors = NetworkGenerator.loadMonitors(appManager.monitorsPath)
+        window.drawGraph(graph, nodes, monitors)
 
 
 appManager = AppManager()

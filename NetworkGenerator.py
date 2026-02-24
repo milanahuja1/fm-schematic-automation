@@ -44,9 +44,34 @@ class NetworkGenerator:
             for row in reader:
                 nodeID = row["Node ID"]
                 nodeType = row["Node type"]
-
                 nodeMap[nodeID] = {
                     "type": nodeType
                 }
-
         return nodeMap
+
+    @staticmethod
+    def loadMonitors(filename):
+        """
+        Reads a monitor CSV with columns: Node ID, Node type
+        Returns:
+            { node_id: {"type": str}, ... }
+        """
+        monitorMap = {}
+
+        # Use utf-8-sig to automatically strip BOM if present
+        with open(filename, newline="", encoding="utf-8-sig") as f:
+            reader = csv.DictReader(f)
+
+            # Normalise headers (strip whitespace)
+            if reader.fieldnames:
+                reader.fieldnames = [name.strip() if name else name for name in reader.fieldnames]
+
+            for row in reader:
+                nodeID = row["Node ID"]
+                nodeType = row["Node type"]
+
+                monitorMap[nodeID] = {
+                    "type": str(nodeType).strip()
+                }
+
+        return monitorMap

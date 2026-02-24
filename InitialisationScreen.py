@@ -64,14 +64,14 @@ class InitialisationScreen(QWidget):
     def import_sensors(self):
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Sensors CSV",
+            "Select Monitors CSV",
             "",
             "CSV Files (*.csv);;All Files (*)"
         )
         if file_path:
             self.sensors_file = file_path
             self.importSensorsLabel.setText(file_path)
-            self.appManager.sensorsPath = file_path
+            self.appManager.monitorsPath = file_path
             self.check_ready()
 
     def check_ready(self):

@@ -41,6 +41,7 @@ class SvgNodeFactory:
     SVG_MAP = {
 
         "manhole": "manhole.svg",
+        "flowmonitor": "flowMonitor.svg",
         "weir": "weir.svg",
         "outfall": "outfall.svg",
         "storage": "storage.svg",

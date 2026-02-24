@@ -11,8 +11,8 @@ class MainWindow(QMainWindow):
         self.appManager = appManager
         self.initialiseParameters()
 
-    def drawGraph(self, graph, nodes):
-        view = NetworkDrawer.drawNetwork(graph, nodes)
+    def drawGraph(self, graph, nodes, monitors):
+        view = NetworkDrawer.drawNetwork(graph, nodes, monitors)
         self.setCentralWidget(view)
 
     def initialiseParameters(self):

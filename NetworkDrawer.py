@@ -11,7 +11,7 @@ from networkx.drawing.nx_pydot import graphviz_layout
 
 class NetworkDrawer:
     @staticmethod
-    def drawNetwork(graph, nodes):
+    def drawNetwork(graph, nodes, monitors):
         """
         graph format:
             { upstream: [(downstream, edge_id), ...], ... }
@@ -71,6 +71,12 @@ class NetworkDrawer:
         node_items = {}
         for node_id, data in nodes.items():
             node_type = data["type"]
+
+            # If this node is a monitor and is a Manhole, override type
+            if monitors and node_id in monitors:
+                if isinstance(node_type, str) and node_type.strip().lower() == "manhole":
+                    node_type = "flowmonitor"
+
             x = data.get("x", 0.0)
             y = -data.get("y", 0.0)
 
