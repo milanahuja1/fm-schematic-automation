@@ -33,7 +33,7 @@ class AppManager:
 
         conduits = NetworkGenerator.generateConduits(links,userControls,flumes,flapValves,orfices,pumps,sluices,weirs)
 
-        window.drawGraph(conduits, nodes, monitors)
+        window.drawGraph(conduits, nodes, monitors, compressed=True)
 
 
 appManager = AppManager()

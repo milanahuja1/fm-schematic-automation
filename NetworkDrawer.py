@@ -11,14 +11,77 @@ from networkx.drawing.nx_pydot import graphviz_layout
 
 class NetworkDrawer:
     @staticmethod
-    def drawNetwork(conduits, nodes, monitors):
+    def _compressToMonitors(conduits, nodes, monitors):
+        """
+        Collapse the full network down to only monitor nodes and non-manhole nodes.
+        Chains of plain manholes between important nodes are replaced with a direct edge.
+        Returns (compressed_conduits, compressed_nodes).
+        """
+        G = nx.DiGraph()
+        for c in (conduits or []):
+            up = str(c.get("upstream", "")).strip()
+            ds = str(c.get("downstream", "")).strip()
+            if up and ds:
+                G.add_edge(up, ds)
+
+        monitor_ids = {str(k) for k in (monitors or {})}
+
+        def is_important(node_id):
+            if str(node_id) in monitor_ids:
+                return True
+            data = nodes.get(node_id) or nodes.get(str(node_id), {})
+            return str(data.get("type", "")).strip().lower() != "manhole"
+
+        important = {n for n in G.nodes if is_important(n)}
+
+        compressed_conduits = []
+        seen_edges = set()
+
+        for start in important:
+            visited = {start}
+            frontier = list(G.successors(start))
+
+            while frontier:
+                next_frontier = []
+                for node in frontier:
+                    if node in visited:
+                        continue
+                    visited.add(node)
+                    if node in important:
+                        edge_key = (start, node)
+                        if edge_key not in seen_edges:
+                            seen_edges.add(edge_key)
+                            compressed_conduits.append({
+                                "id": f"{start}_to_{node}",
+                                "upstream": start,
+                                "downstream": node,
+                                "type": "link",
+                            })
+                    else:
+                        next_frontier.extend(G.successors(node))
+                frontier = next_frontier
+
+        compressed_nodes = {nid: data for nid, data in nodes.items() if is_important(nid)}
+
+        print(f"--- COMPRESSION: {len(nodes)} nodes → {len(compressed_nodes)}, "
+              f"{len(conduits or [])} conduits → {len(compressed_conduits)} ---")
+
+        return compressed_conduits, compressed_nodes
+
+    @staticmethod
+    def drawNetwork(conduits, nodes, monitors, compressed=False):
         """
         conduits format:
             [
                 {"id": str, "upstream": str, "downstream": str, "type": str},
                 ...
             ]
+        compressed: if True, collapse plain-manhole chains and show only monitors
+                    and non-manhole nodes.
         """
+
+        if compressed:
+            conduits, nodes = NetworkDrawer._compressToMonitors(conduits, nodes, monitors)
 
         # --------------------------
         # Auto layout using Graphviz (flow diagram)
