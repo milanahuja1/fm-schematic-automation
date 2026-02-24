@@ -6,20 +6,14 @@ import sys
 
 
 class ConfigureMonitorsScreen(QWidget):
-    def __init__(self, appManager, monitors,links):
+    def __init__(self, appManager, monitors, links):
         super().__init__()
         uic.loadUi("ConfigureMonitorsScreen.ui", self)
 
         self.appManager = appManager
         self.monitors = monitors
-
-        # Link dropdown options
-        self.linkOptions = [
-            "None",
-            "Upstream",
-            "Downstream",
-        ]
-
+        self.links = links
+        self.linksByNode = self._buildLinksByNode(self.links)
         self.initialiseUI()
 
     def initialiseUI(self):
@@ -28,6 +22,8 @@ class ConfigureMonitorsScreen(QWidget):
         # Buttons
         if hasattr(self, "okButton"):
             self.okButton.clicked.connect(self.okButtonClicked)
+            self.okButton.setEnabled(False)
+
         if hasattr(self, "closeButton"):
             self.closeButton.clicked.connect(self.closeButtonClicked)
 
@@ -83,6 +79,75 @@ class ConfigureMonitorsScreen(QWidget):
 
         return out
 
+    def _normaliseNodeID(self, node_id):
+        if node_id is None:
+            return ""
+        return str(node_id).strip()
+
+    def _buildLinksByNode(self, links):
+        """Build {node_id: [ {"id": str, "type": str}, ... ]} from a links list.
+
+        Expected links format (list of dicts):
+            {"id": str, "upstream": str, "downstream": str, "type": str}
+        """
+        by_node = {}
+        if not links:
+            return by_node
+
+        for l in links:
+            if not isinstance(l, dict):
+                continue
+
+            lid = self._normaliseNodeID(l.get("id"))
+            up = self._normaliseNodeID(l.get("upstream"))
+            ds = self._normaliseNodeID(l.get("downstream"))
+            ltype = str(l.get("type", "link")).strip()
+
+            if not lid:
+                continue
+
+            record = {"id": lid, "type": ltype}
+
+            if up:
+                by_node.setdefault(up, []).append(record)
+            if ds:
+                by_node.setdefault(ds, []).append(record)
+
+        # De-duplicate per node by link id (keep first type seen)
+        for node, records in list(by_node.items()):
+            seen = set()
+            deduped = []
+            for r in records:
+                rid = r.get("id")
+                if rid in seen:
+                    continue
+                seen.add(rid)
+                deduped.append(r)
+            by_node[node] = deduped
+
+        return by_node
+
+    def _linkDisplayText(self, link_id, link_type):
+        """e.g. TA047... .03 (weir)"""
+        lt = str(link_type).strip()
+        if lt == "":
+            lt = "link"
+        return f"{link_id} ({lt})"
+
+    def _populateLinkDropdown(self, combo: QComboBox, node_id: str):
+        combo.clear()
+
+        # Always include a blank option
+        combo.addItem("None", None)
+
+        records = self.linksByNode.get(self._normaliseNodeID(node_id), [])
+        for r in records:
+            lid = r.get("id")
+            ltype = r.get("type", "link")
+            if not lid:
+                continue
+            combo.addItem(self._linkDisplayText(lid, ltype), {"id": lid, "type": ltype})
+
     def _populateTable(self):
         """Populate rows from the monitors/manholes list."""
         pairs = self._normaliseMonitors()
@@ -99,9 +164,10 @@ class ConfigureMonitorsScreen(QWidget):
             monitor_edit.setPlaceholderText("Enter monitor name…")
             self.table.setCellWidget(row, 1, monitor_edit)
 
-            # Col 2: link dropdown (QComboBox)
+            # Col 2: link dropdown (QComboBox) populated per node
             combo = QComboBox(self.table)
-            combo.addItems(self.linkOptions)
+            self._populateLinkDropdown(combo, manhole_name)
+            combo.currentIndexChanged.connect(self._updateOkEnabled)
             self.table.setCellWidget(row, 2, combo)
 
             # Col 3: user text input (QLineEdit)
@@ -109,9 +175,11 @@ class ConfigureMonitorsScreen(QWidget):
             note.setPlaceholderText("Enter note…")
             self.table.setCellWidget(row, 3, note)
 
+        self._updateOkEnabled()
+
     def _collectTableData(self):
         """Collect the edited values into a dict keyed by manhole name."""
-        result = {}
+        monitorInformation = {}
         for row in range(self.table.rowCount()):
             mh_item = self.table.item(row, 0)
             if mh_item is None:
@@ -122,26 +190,52 @@ class ConfigureMonitorsScreen(QWidget):
             monitor_name = monitor_widget.text() if isinstance(monitor_widget, QLineEdit) else ""
 
             link_widget = self.table.cellWidget(row, 2)
-            link_value = link_widget.currentText() if isinstance(link_widget, QComboBox) else ""
+            link_value = ""
+            if isinstance(link_widget, QComboBox):
+                data = link_widget.currentData()
+                if isinstance(data, dict) and data.get("id"):
+                    link_value = data.get("id")
+                else:
+                    # None selected
+                    link_value = ""
 
             note_widget = self.table.cellWidget(row, 3)
             note_text = note_widget.text() if isinstance(note_widget, QLineEdit) else ""
 
-            result[manhole_name] = {
+            monitorInformation[manhole_name] = {
                 "monitorName": monitor_name,
                 "note": note_text,
                 "link": link_value,
             }
 
-        return result
+        return monitorInformation
+
+    def _updateOkEnabled(self):
+        """Enable OK only when every row's Link dropdown has a selected link (not 'None')."""
+        if not hasattr(self, "okButton"):
+            return
+
+        all_selected = True
+
+        for row in range(self.table.rowCount()):
+            link_widget = self.table.cellWidget(row, 2)
+            if not isinstance(link_widget, QComboBox):
+                all_selected = False
+                break
+
+            data = link_widget.currentData()
+            # We store None for the "None" option
+            if data is None:
+                all_selected = False
+                break
+
+        self.okButton.setEnabled(all_selected)
 
     def okButtonClicked(self):
-        data = self._collectTableData()
+        monitorInformation = self._collectTableData()
 
         # Store on appManager for later use (safe default)
-        self.appManager.monitorConfig = data
-
-        self.close()
+        self.appManager.completeMonitorConfig(monitorInformation)
 
     def closeButtonClicked(self):
-        self.close()
+        return
