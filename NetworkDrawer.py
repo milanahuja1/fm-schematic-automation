@@ -81,29 +81,47 @@ class NetworkDrawer:
         return compressed_conduits, compressed_nodes
 
     @staticmethod
-    def _spreadStackedNodes(nodes, threshold=25.0, radius=35.0):
+    def _removeOverlaps(nodes, min_sep=60.0, max_iterations=200):
         """
-        Detect nodes whose screen positions are within `threshold` pixels of each
-        other and spread them evenly around a circle of `radius` pixels so they
-        don't render on top of one another.
+        Iteratively push every pair of nodes that are closer than min_sep pixels
+        apart until no overlaps remain (or max_iterations is reached).
+
+        Handles all cases including exactly coincident nodes. Each iteration is
+        O(n²) over the node list, with early exit when nothing moved.
         """
-        from collections import defaultdict
+        nids = list(nodes.keys())
+        n = len(nids)
+        if n < 2:
+            return
 
-        # Bucket nodes by position cell so we only compare nearby nodes
-        buckets = defaultdict(list)
-        for nid, data in nodes.items():
-            bx = round(data["x"] / threshold)
-            by = round(data["y"] / threshold)
-            buckets[(bx, by)].append(nid)
+        for _ in range(max_iterations):
+            any_moved = False
 
-        for nids in buckets.values():
-            if len(nids) > 1:
-                cx = sum(nodes[n]["x"] for n in nids) / len(nids)
-                cy = sum(nodes[n]["y"] for n in nids) / len(nids)
-                for i, nid in enumerate(nids):
-                    angle = 2 * math.pi * i / len(nids)
-                    nodes[nid]["x"] = cx + radius * math.cos(angle)
-                    nodes[nid]["y"] = cy + radius * math.sin(angle)
+            for i in range(n):
+                for j in range(i + 1, n):
+                    a, b = nids[i], nids[j]
+                    dx = nodes[b]["x"] - nodes[a]["x"]
+                    dy = nodes[b]["y"] - nodes[a]["y"]
+                    dist = math.sqrt(dx * dx + dy * dy)
+
+                    if dist < min_sep:
+                        if dist < 1e-6:
+                            # Coincident: push along a deterministic angle so
+                            # pairs spread rather than all collapsing to one side
+                            angle = 2 * math.pi * j / n
+                            dx, dy, dist = math.cos(angle), math.sin(angle), 1.0
+
+                        push = (min_sep - dist) / 2.0
+                        nx_ = dx / dist
+                        ny_ = dy / dist
+                        nodes[a]["x"] -= nx_ * push
+                        nodes[a]["y"] -= ny_ * push
+                        nodes[b]["x"] += nx_ * push
+                        nodes[b]["y"] += ny_ * push
+                        any_moved = True
+
+            if not any_moved:
+                break
 
     @staticmethod
     def drawNetwork(conduits, nodes, monitors, compressed=False):
@@ -188,8 +206,8 @@ class NetworkDrawer:
                     nodes[node_id]["x"] = (x - min_x) * scale
                     nodes[node_id]["y"] = (y - min_y) * scale
 
-        # Spread any nodes that landed on top of each other
-        NetworkDrawer._spreadStackedNodes(nodes)
+        # Iteratively push overlapping nodes apart until none remain
+        NetworkDrawer._removeOverlaps(nodes)
 
         scene = QGraphicsScene()
 
