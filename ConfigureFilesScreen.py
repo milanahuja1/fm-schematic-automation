@@ -54,6 +54,7 @@ class ConfigureFilesScreen(QWidget):
                 ("Sluices", "sluices"),
                 ("User controls", "user_controls"),
                 ("Flap valves", "flap_valves"),
+                ("Other link", "other_link"),
             ]
 
             self.fileConfigTable.setRowCount(len(self.files))
@@ -90,17 +91,21 @@ class ConfigureFilesScreen(QWidget):
                     ("Pink", "#ff69b4"),
                     ("Brown", "#8e5a2b"),
                     ("Grey", "#7f8c8d"),
+                    ("None", None),
                 ]
 
                 for name, hex_code in colours:
-                    # Store hex code as the item's data, and show a coloured swatch icon
-                    colour_combo.addItem(self._makeColourIcon(hex_code), name, hex_code)
+                    # Store hex code as the item's data; show a swatch only when a real colour exists
+                    if hex_code is None:
+                        colour_combo.addItem(name, None)
+                    else:
+                        colour_combo.addItem(self._makeColourIcon(hex_code), name, hex_code)
 
                 colour_combo.currentIndexChanged.connect(self._updateOkEnabled)
 
-                # Distribute default colours across rows
-                if colour_combo.count() > 0:
-                    colour_combo.setCurrentIndex(row % colour_combo.count())
+                # Distribute default colours across rows (skip the final "None" option)
+                if colour_combo.count() > 1:
+                    colour_combo.setCurrentIndex(row % (colour_combo.count() - 1))
 
                 self.fileConfigTable.setCellWidget(row, 2, colour_combo)
                 self._updateColourEnabled(row)
@@ -130,6 +135,11 @@ class ConfigureFilesScreen(QWidget):
 
         # Disable colour for nodes and monitors
         if selected_type in ("nodes", "monitors"):
+            # Force colour to the explicit None option when colours are not applicable
+            none_index = colour_widget.findText("None")
+            if none_index != -1:
+                colour_widget.setCurrentIndex(none_index)
+
             colour_widget.setEnabled(False)
         else:
             colour_widget.setEnabled(True)
