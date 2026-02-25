@@ -13,30 +13,12 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QPushButton" name="importMonitorButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>150</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Monitors</string>
-   </property>
-  </widget>
   <widget class="QPushButton" name="useSampleDataButton">
    <property name="geometry">
     <rect>
-     <x>500</x>
+     <x>510</x>
      <y>546</y>
-     <width>141</width>
+     <width>161</width>
      <height>32</height>
     </rect>
    </property>
@@ -53,9 +35,9 @@
   <widget class="QPushButton" name="createGraphButton">
    <property name="geometry">
     <rect>
-     <x>310</x>
+     <x>340</x>
      <y>550</y>
-     <width>181</width>
+     <width>161</width>
      <height>21</height>
     </rect>
    </property>
@@ -69,378 +51,21 @@
         background-color: #1f77b4;
         color: white;
 	border-radius: 5px;
+    }
+
+    QPushButton:disabled {
+	background-color: #9e9e9e;
+	color: #f0f0f0;
     }</string>
    </property>
    <property name="text">
-    <string>Create Schematic</string>
+    <string>Load Data</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="importNodeButton">
+  <widget class="QLabel" name="title">
    <property name="geometry">
     <rect>
-     <x>310</x>
-     <y>50</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Nodes</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importConduitButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>100</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Conduits</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importNodeLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>60</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importConduitLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>110</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importMonitorLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>160</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importUserControlButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>200</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import User Controls</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importFlumeButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>250</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Flumes</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importFlapValveButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>300</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Flap Valves</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importSluiceButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>450</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Sluice</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importOrificeButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>350</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Orifices</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importPumpButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>400</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Pumps</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="importWeirButton">
-   <property name="geometry">
-    <rect>
-     <x>310</x>
-     <y>500</y>
-     <width>181</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-    </font>
-   </property>
-   <property name="text">
-    <string>Import Weir</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importUserControlLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>210</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importFlumeLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>260</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importFlapValveLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>310</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importOrificeLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>360</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importPumpLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>410</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importSluiceLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>460</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importWeirLabel">
-   <property name="geometry">
-    <rect>
-     <x>510</x>
-     <y>510</y>
-     <width>561</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <family>Fira Code</family>
-     <pointsize>10</pointsize>
-     <bold>false</bold>
-    </font>
-   </property>
-   <property name="text">
-    <string>No file selected</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="importWeirLabel_2">
-   <property name="geometry">
-    <rect>
-     <x>20</x>
+     <x>370</x>
      <y>30</y>
      <width>561</width>
      <height>16</height>
@@ -449,7 +74,7 @@
    <property name="font">
     <font>
      <family>Fira Code</family>
-     <pointsize>14</pointsize>
+     <pointsize>16</pointsize>
      <bold>false</bold>
     </font>
    </property>
@@ -457,11 +82,11 @@
     <string>Flow Monitor Schematic Generator</string>
    </property>
   </widget>
-  <widget class="QLabel" name="importWeirLabel_5">
+  <widget class="QLabel" name="author">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>50</y>
+     <x>440</x>
+     <y>60</y>
      <width>561</width>
      <height>16</height>
     </rect>
@@ -477,11 +102,11 @@
     <string>Author: Milan Ahuja</string>
    </property>
   </widget>
-  <widget class="QLabel" name="importWeirLabel_4">
+  <widget class="QLabel" name="coauthor">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>70</y>
+     <x>440</x>
+     <y>80</y>
      <width>561</width>
      <height>16</height>
     </rect>
@@ -496,6 +121,63 @@
    <property name="text">
     <string>Co-Author: Armaan Ahuja</string>
    </property>
+  </widget>
+  <widget class="QFrame" name="importFrame">
+   <property name="geometry">
+    <rect>
+     <x>120</x>
+     <y>210</y>
+     <width>751</width>
+     <height>201</height>
+    </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">QFrame{
+    border: 2px dashed #888888;
+    border-radius: 10px;
+    background-color: #f5f5f5;
+}
+
+QFrame:hover {
+    border: 2px dashed #1f77b4;
+    background-color: #eaf3fb;
+}</string>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Shape::StyledPanel</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Shadow::Raised</enum>
+   </property>
+   <widget class="QLabel" name="importLabel">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>10</y>
+      <width>711</width>
+      <height>171</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">QFrame{
+    border: 2px dashed #9e9e9e;
+    border-radius: 12px;
+    background-color: #f5f5f5;
+}
+
+QLabel {
+    background: transparent;
+    color: #555555;
+    border: none;
+}</string>
+    </property>
+    <property name="text">
+     <string>Click to import CSV files or drag and drop</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignCenter</set>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>

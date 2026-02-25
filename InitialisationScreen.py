@@ -10,46 +10,84 @@ class InitialisationScreen(QWidget):
         uic.loadUi("InitialisationScreen.ui", self)
         self.appManager = appManager
 
+        # Enable drag and drop on the import frame
+        self.importFrame.setAcceptDrops(True)
+        # Forward drag/drop events from the frame to this widget
+        self.importFrame.installEventFilter(self)
+
         #Grey out the createGraph button
         self.createGraphButton.setEnabled(False)
 
-        # Store selected file paths
-        self.nodes_file = None
-        self.pipes_file = None
-        self.sensors_file = None
 
         # Connect import buttons
-        self.importNodeButton.clicked.connect(self.importNodes)
-        self.importMonitorButton.clicked.connect(self.importMonitors)
         self.useSampleDataButton.clicked.connect(self.useSampleData)
-        self.createGraphButton.clicked.connect(self.createGraph)
+        self.createGraphButton.clicked.connect(self.loadData)
 
+        self.files = []
 
-        # Links import mapping (button name -> label + appManager path attribute)
-        # Note: "links" are the base pipes network.
-        self.linkButtonMap = {
-            "importConduitButton": {"label": "importConduitLabel", "path_attr": "conduitPath", "title": "Select Links CSV"},
-            "importUserControlButton": {"label": "importUserControlLabel", "path_attr": "userControlPath", "title": "Select User Control CSV"},
-            "importFlumeButton": {"label": "importFlumeLabel", "path_attr": "flumePath", "title": "Select Flumes CSV"},
-            "importFlapValveButton": {"label": "importFlapValveLabel", "path_attr": "flapValvePath", "title": "Select Flap Valves CSV"},
-            "importOrificeButton": {"label": "importOrificeLabel", "path_attr": "orificePath", "title": "Select Orifices CSV"},
-            "importPumpButton": {"label": "importPumpLabel", "path_attr": "pumpPath", "title": "Select Pumps CSV"},
-            "importSluiceButton": {"label": "importSluiceLabel", "path_attr": "sluicePath", "title": "Select Sluices CSV"},
-            "importWeirButton": {"label": "importWeirLabel", "path_attr": "weirPath", "title": "Select Weirs CSV"},
-        }
+    def eventFilter(self, obj, event):
+        if obj == self.importFrame:
+            if event.type() == event.Type.DragEnter:
+                self.dragEnterEvent(event)
+                return True
+            if event.type() == event.Type.Drop:
+                self.dropEvent(event)
+                return True
+            if event.type() == event.Type.MouseButtonPress:
+                self.openFileDialog()
+                return True
+        return super().eventFilter(obj, event)
 
-        # Store selected conduit paths by type
-        self.conduit_files = {}
+    def dragEnterEvent(self, event):
+        # Accept only file drops
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
 
-        # Connect all conduit import buttons to one handler
-        for button_name in self.linkButtonMap:
-            btn = getattr(self, button_name, None)
-            if btn is not None:
-                btn.clicked.connect(self.importConduit)
+    def dropEvent(self, event):
+        urls = event.mimeData().urls()
+        if not urls:
+            return
 
-    def createGraph(self):
+        csv_files = []
+        for url in urls:
+            file_path = url.toLocalFile()
+            if file_path.lower().endswith(".csv"):
+                csv_files.append(file_path)
+
+        if not csv_files:
+            return
+
+        filenames = [os.path.basename(f) for f in csv_files]
+        self.importLabel.setText("\n".join(filenames))
+        self.files = csv_files
+        self.check_ready()
+
+    def openFileDialog(self):
+        files, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Select CSV Files",
+            "",
+            "CSV Files (*.csv);;All Files (*)"
+        )
+
+        if not files:
+            return
+
+        filenames = [os.path.basename(f) for f in files]
+        self.importLabel.setText("\n".join(filenames))
+        self.files = files
+        self.check_ready()
+
+    def loadData(self):
         self.appManager.launchConfigureMonitors()
-        print("hello")
+
+
+    def check_ready(self):
+        # Enable Create Graph if at least one file has been imported
+        if len(self.files) > 0:
+            self.createGraphButton.setEnabled(True)
 
     def useSampleData(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -66,80 +104,3 @@ class InitialisationScreen(QWidget):
         self.appManager.weirPath = os.path.join(base_dir, "sampleData", "Muston_Weirs.csv")
 
         self.appManager.launchConfigureMonitors()
-
-    def importNodes(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Nodes CSV",
-            "",
-            "CSV Files (*.csv);;All Files (*)"
-        )
-        if file_path:
-            self.nodes_file = file_path
-            self.importNodeLabel.setText(file_path)
-            self.appManager.nodePath = file_path
-            self.check_ready()
-
-    def importConduit(self):
-        btn = self.sender()
-        if btn is None:
-            return
-
-        button_name = btn.objectName()
-        config = self.linkButtonMap.get(button_name)
-        if config is None:
-            return
-
-        title = config.get("title", "Select CSV")
-
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            title,
-            "",
-            "CSV Files (*.csv);;All Files (*)"
-        )
-
-        if not file_path:
-            return
-
-        # Update the matching label in the UI
-        label_name = config.get("label")
-        label_widget = getattr(self, label_name, None)
-        if label_widget is not None:
-            label_widget.setText(file_path)
-
-        # Save onto appManager (e.g., appManager.pipePath, appManager.weirPath, ...)
-        path_attr = config.get("path_attr")
-        if path_attr:
-            setattr(self.appManager, path_attr, file_path)
-
-        # Track what the user selected
-        self.conduit_files[button_name] = file_path
-
-        # For readiness, treat links (base pipes) as the required "pipes_file"
-        if button_name == "importLinkButton":
-            self.pipes_file = file_path
-
-        self.check_ready()
-
-    def importMonitors(self):
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Monitors CSV",
-            "",
-            "CSV Files (*.csv);;All Files (*)"
-        )
-        if file_path:
-            self.sensors_file = file_path
-            self.importMonitorLabel.setText(file_path)
-            self.appManager.monitorsPath = file_path
-            self.check_ready()
-
-    def check_ready(self):
-        self.createGraphButton.setEnabled(True)
-        """
-        if self.nodes_file and self.pipes_file:
-            self.createGraphButton.setEnabled(True)
-        else:
-            self.createGraphButton.setEnabled(False)
-        """
