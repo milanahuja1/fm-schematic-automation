@@ -38,9 +38,9 @@ class ConfigureMonitorsScreen(QWidget):
 
         self.table.setColumnCount(4)
         self.table.setHorizontalHeaderLabels([
-            "Manhole name",
-            "Monitor name",
-            "Link",
+            "Manhole ID",
+            "Monitor Alias (optional)",
+            "Link ID",
             "Notes (optional)",
         ])
 
@@ -161,7 +161,7 @@ class ConfigureMonitorsScreen(QWidget):
 
             # Col 1: monitorName (user editable QLineEdit)
             monitor_edit = QLineEdit(self.table)
-            monitor_edit.setPlaceholderText("Enter monitor name…")
+            monitor_edit.setPlaceholderText("Enter monitor alias")
             self.table.setCellWidget(row, 1, monitor_edit)
 
             # Col 2: link dropdown (QComboBox) populated per node
@@ -172,7 +172,7 @@ class ConfigureMonitorsScreen(QWidget):
 
             # Col 3: user text input (QLineEdit)
             note = QLineEdit(self.table)
-            note.setPlaceholderText("Enter note…")
+            note.setPlaceholderText("Enter notes")
             self.table.setCellWidget(row, 3, note)
 
         self._updateOkEnabled()

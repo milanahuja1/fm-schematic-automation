@@ -31,16 +31,28 @@ class NetworkDrawer:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def drawNetwork(conduits, nodes, monitors, compressed=False):
+    def drawNetwork(conduits, nodes, monitors, monitorInformation, compressed=False):
         """
         Build and return a QGraphicsView containing the network schematic.
 
         conduits : list of {"id", "upstream", "downstream", "type"}
         nodes    : dict  node_id -> {"type", "x", "y", ...}
         monitors : dict  node_id -> {...}   (nodes that carry flow monitors)
+        monitorInformation : dict
+            Mapping of manhole node_id -> {
+                "monitorName": str   # user-defined monitor label
+                "note": str          # free-text comment entered by user
+                "link": str          # selected conduit ID the monitor is attached to
+            }
         compressed: if True, collapse manhole chains so only monitors and
                     non-manhole structures are shown.
         """
+        # Split pipes and insert monitor nodes before anything else so that
+        # compression and layout both see monitors as first-class nodes.
+        conduits, nodes, inserted_manholes = NetworkDrawer._insertMonitorNodes(
+            conduits, nodes, monitorInformation
+        )
+
         if compressed:
             conduits, nodes = NetworkDrawer._compressToMonitors(conduits, nodes, monitors)
 
@@ -51,12 +63,92 @@ class NetworkDrawer:
         NetworkDrawer._removeOverlaps(nodes)
 
         scene = QGraphicsScene()
-        node_items, node_items_str = NetworkDrawer._buildNodeItems(scene, nodes, monitors)
+        node_items, node_items_str = NetworkDrawer._buildNodeItems(
+            scene, nodes, monitors, inserted_manholes
+        )
         NetworkDrawer._buildPipeItems(scene, conduits, node_items_str)
 
         view = QGraphicsView(scene)
         view.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         return view
+
+    # ------------------------------------------------------------------
+    # Monitor node insertion
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _insertMonitorNodes(conduits, nodes, monitorInformation):
+        """
+        For every entry in monitorInformation that specifies a link (conduit ID),
+        split that conduit into two and insert a new flowmonitor node in between:
+
+            upstream ──[pipe]──> downstream
+            becomes:
+            upstream ──[pipe_us]──> [monitor] ──[pipe_ds]──> downstream
+
+        The monitor node is given world coordinates at the midpoint of its two
+        neighbours so the fixed-length layout uses the correct direction.
+
+        Returns:
+            (modified_conduits, modified_nodes, inserted_manholes)
+            where inserted_manholes is the set of manhole IDs whose monitor was
+            successfully inserted as a separate node (used to suppress the legacy
+            manhole → flowmonitor type override for those nodes).
+        """
+        if not monitorInformation:
+            return conduits, nodes, set()
+
+        conduit_by_id   = {c["id"]: c for c in conduits}
+        to_remove       = set()
+        new_conduits    = []
+        new_nodes       = {}
+        inserted_manholes = set()
+
+        for manhole_id, info in monitorInformation.items():
+            link_id = str(info.get("link", "")).strip()
+            if not link_id or link_id not in conduit_by_id:
+                continue
+
+            original = conduit_by_id[link_id]
+            up_id    = original["upstream"]
+            ds_id    = original["downstream"]
+
+            monitor_id = str(info.get("monitorName", "") or f"monitor_{manhole_id}").strip()
+
+            # World position: midpoint between the two pipe endpoints
+            up_data = nodes.get(up_id, nodes.get(str(up_id), {}))
+            ds_data = nodes.get(ds_id, nodes.get(str(ds_id), {}))
+            mx = (up_data.get("x", 0.0) + ds_data.get("x", 0.0)) / 2.0
+            my = (up_data.get("y", 0.0) + ds_data.get("y", 0.0)) / 2.0
+
+            new_nodes[monitor_id] = {
+                "type":    "flowmonitor",
+                "x":       mx,
+                "y":       my,
+                "tooltip": info.get("note", ""),
+            }
+
+            # Replace the original conduit with two halves
+            new_conduits.append({
+                "id":         f"{link_id}_us",
+                "upstream":   up_id,
+                "downstream": monitor_id,
+                "type":       original["type"],
+            })
+            new_conduits.append({
+                "id":         f"{link_id}_ds",
+                "upstream":   monitor_id,
+                "downstream": ds_id,
+                "type":       original["type"],
+            })
+
+            to_remove.add(link_id)
+            inserted_manholes.add(str(manhole_id))
+
+        modified_conduits = [c for c in conduits if c["id"] not in to_remove] + new_conduits
+        modified_nodes    = {**nodes, **new_nodes}
+
+        return modified_conduits, modified_nodes, inserted_manholes
 
     # ------------------------------------------------------------------
     # Graph construction
@@ -285,7 +377,7 @@ class NetworkDrawer:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _buildNodeItems(scene, nodes, monitors):
+    def _buildNodeItems(scene, nodes, monitors, inserted_manholes=None):
         """
         Create an SVG item for every node, add it to the scene, and return
         two lookup dicts: one keyed by original node_id, one by str(node_id).
@@ -294,25 +386,34 @@ class NetworkDrawer:
         node_items_str = {}
 
         for node_id, data in nodes.items():
-            node_type    = NetworkDrawer._resolveNodeType(node_id, data, monitors)
+            node_type    = NetworkDrawer._resolveNodeType(node_id, data, monitors, inserted_manholes)
             x            = data.get("x", 0.0)
             y            = -data.get("y", 0.0)      # flip y: world ↑ → screen ↓
             tooltip_text = data.get("tooltip")
 
             item = SvgNodeFactory.create(node_id, node_type, x, y, tooltip_text=tooltip_text)
             scene.addItem(item)
-            node_items[node_id]      = item
+            node_items[node_id]          = item
             node_items_str[str(node_id)] = item
 
         return node_items, node_items_str
 
     @staticmethod
-    def _resolveNodeType(node_id, data, monitors):
-        """Return 'flowmonitor' if this node has a monitor fitted, else its normal type."""
+    def _resolveNodeType(node_id, data, monitors, inserted_manholes=None):
+        """
+        Return the display type for a node.
+
+        Manholes that are in the monitors dict are shown as 'flowmonitor' UNLESS
+        their monitor was already inserted as a separate node (in which case the
+        manhole stays as a plain manhole and the dedicated monitor node carries
+        the flowmonitor symbol).
+        """
         node_type = data["type"]
         if monitors and node_id in monitors:
-            if isinstance(node_type, str) and node_type.strip().lower() == "manhole":
-                return "flowmonitor"
+            already_inserted = inserted_manholes and str(node_id) in inserted_manholes
+            if not already_inserted:
+                if isinstance(node_type, str) and node_type.strip().lower() == "manhole":
+                    return "flowmonitor"
         return node_type
 
     @staticmethod

@@ -31,7 +31,7 @@ class AppManager:
                 "link": link_value}
         """
         self.monitorInformation = monitorInformation
-        window.drawGraph(self.links, self.nodes, self.monitors, compressed=True)
+        window.drawGraph(self.links, self.nodes, self.monitors, self.monitorInformation, compressed=True)
 
     def loadData(self):
         self.nodes = NetworkGenerator.loadNodes(appManager.nodePath)
