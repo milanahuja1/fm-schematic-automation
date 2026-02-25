@@ -423,8 +423,17 @@ class NetworkDrawer:
             up      = str(c.get("upstream",   "")).strip()
             ds      = str(c.get("downstream", "")).strip()
             edge_id = c.get("id")
-            ctype   = str(c.get("type", "conduit")).strip().lower()
-            colour  = CONDUIT_COLOURS.get(ctype, CONDUIT_COLOURS["conduit"])
+            ctype = str(c.get("type", "conduit")).strip().lower()
+
+            # Prefer an explicit per-link colour (hex string) if provided
+            explicit = c.get("colour")
+            if explicit:
+                try:
+                    colour = explicit if isinstance(explicit, QColor) else QColor(str(explicit))
+                except Exception:
+                    colour = CONDUIT_COLOURS.get(ctype, CONDUIT_COLOURS["conduit"])
+            else:
+                colour = CONDUIT_COLOURS.get(ctype, CONDUIT_COLOURS["conduit"])
 
             if not up or not ds:
                 continue
@@ -465,7 +474,7 @@ class NetworkDrawer:
         monitor_ids = {str(k) for k in (monitors or {})}
         important  = {n for n in G.nodes if NetworkDrawer._isImportant(n, nodes, monitor_ids)}
 
-        compressed_conduits = NetworkDrawer._traceCompressedEdges(G, important)
+        compressed_conduits = NetworkDrawer._traceCompressedEdges(G, important, conduits)
         compressed_nodes    = NetworkDrawer._filterConnectedNodes(nodes, compressed_conduits)
 
         print(f"--- COMPRESSION: {len(nodes)} nodes → {len(compressed_nodes)}, "
@@ -482,13 +491,23 @@ class NetworkDrawer:
         return str(data.get("type", "")).strip().lower() != "manhole"
 
     @staticmethod
-    def _traceCompressedEdges(G, important):
+    def _traceCompressedEdges(G, important, conduits):
         """
         BFS from each important node through manhole intermediates.
         Emits a direct edge whenever another important node is reached.
+        If a direct original conduit exists between two important nodes, reuse its id/type/colour.
         """
         compressed = []
         seen_edges = set()
+
+        # Map direct (up, ds) -> original conduit dict so we can preserve id/type/colour
+        direct_edge = {}
+        for c in (conduits or []):
+            up = str(c.get("upstream", "")).strip()
+            ds = str(c.get("downstream", "")).strip()
+            if up and ds:
+                # If duplicates exist, keep the first one encountered
+                direct_edge.setdefault((up, ds), c)
 
         for start in important:
             visited  = {start}
@@ -504,12 +523,22 @@ class NetworkDrawer:
                         key = (start, node)
                         if key not in seen_edges:
                             seen_edges.add(key)
-                            compressed.append({
-                                "id":         f"{start}_to_{node}",
-                                "upstream":   start,
-                                "downstream": node,
-                                "type":       "conduit",
-                            })
+                            original = direct_edge.get((start, node))
+                            if original is not None:
+                                compressed.append({
+                                    "id":         original.get("id"),
+                                    "upstream":   start,
+                                    "downstream": node,
+                                    "type":       original.get("type", "conduit"),
+                                    "colour":     original.get("colour"),
+                                })
+                            else:
+                                compressed.append({
+                                    "id":         f"{start}_to_{node}",
+                                    "upstream":   start,
+                                    "downstream": node,
+                                    "type":       "conduit",
+                                })
                     else:
                         next_frontier.extend(G.successors(node))
                 frontier = next_frontier

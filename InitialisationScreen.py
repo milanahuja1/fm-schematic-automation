@@ -20,7 +20,7 @@ class InitialisationScreen(QWidget):
 
 
         # Connect import buttons
-        self.useSampleDataButton.clicked.connect(self.useSampleData)
+        self.loadSaveFileButton.clicked.connect(self.loadSaveFile)
         self.createGraphButton.clicked.connect(self.loadData)
 
         self.files = []
@@ -89,18 +89,5 @@ class InitialisationScreen(QWidget):
         if len(self.files) > 0:
             self.createGraphButton.setEnabled(True)
 
-    def useSampleData(self):
-        base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.appManager.nodePath = os.path.join(base_dir, "sampleData", "Muston_Nodes.csv")
-        self.appManager.monitorsPath = os.path.join(base_dir, "sampleData", "Muston_Monitors.csv")
-        #links:
-        self.appManager.conduitPath = os.path.join(base_dir, "sampleData", "Muston_Links.csv")
-        self.appManager.userControlPath = os.path.join(base_dir, "sampleData", "User_Control.csv")
-        self.appManager.flumePath = os.path.join(base_dir, "sampleData", "Muston_flumes.csv")
-        self.appManager.flapValvePath = os.path.join(base_dir, "sampleData", "Muston_Flap_Valve.csv")
-        self.appManager.orificePath = os.path.join(base_dir, "sampleData", "Muston_Orifices.csv")
-        self.appManager.pumpPath = os.path.join(base_dir, "sampleData", "Muston_Pumps.csv")
-        self.appManager.sluicePath = os.path.join(base_dir, "sampleData", "Muston_Sluice.csv")
-        self.appManager.weirPath = os.path.join(base_dir, "sampleData", "Muston_Weirs.csv")
-
-        self.appManager.launchConfigureMonitors()
+    def loadSaveFile(self):
+        self.appManager.load_state()

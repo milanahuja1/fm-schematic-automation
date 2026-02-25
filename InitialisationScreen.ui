@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QPushButton" name="useSampleDataButton">
+  <widget class="QPushButton" name="loadSaveFileButton">
    <property name="geometry">
     <rect>
      <x>510</x>
@@ -29,7 +29,7 @@
     </font>
    </property>
    <property name="text">
-    <string>Use sample data</string>
+    <string>Load .fm file</string>
    </property>
   </widget>
   <widget class="QPushButton" name="createGraphButton">

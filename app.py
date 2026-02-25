@@ -1,8 +1,9 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow
+import os
+from PyQt6.QtWidgets import QApplication, QMainWindow, QFileDialog
 from mainwindow.MainWindow import MainWindow
 from NetworkGenerator import NetworkGenerator
-import os
+import pickle
 
 class AppManager:
     window = None
@@ -39,6 +40,63 @@ class AppManager:
                 "link": link_value}
         """
         self.monitorInformation = monitorInformation
+        window.drawGraph(self.links, self.nodes, self.monitors, self.monitorInformation, compressed=True)
+
+
+    def save_state(self, path=None):
+        """Save nodes/links/monitors/monitorInformation to a pickle file.
+
+        If `path` is not provided, a folder picker is shown and the state is saved as
+        `schematic_state.pkl` inside the chosen folder.
+        """
+        if not path:
+            folder = QFileDialog.getExistingDirectory(
+                self.window,
+                "Choose a folder to save the state",
+                "",
+            )
+            if not folder:
+                return  # user cancelled
+
+            path = os.path.join(folder, "schematic_state.pkl")
+
+        payload = {
+            "nodes": self.nodes,
+            "links": self.links,
+            "monitors": self.monitors,
+            "monitorInformation": self.monitorInformation,
+        }
+
+        with open(path, "wb") as f:
+            pickle.dump(payload, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        print(f"[DEBUG] Saved state to: {path}")
+
+    def load_state(self, path=None):
+        """Load nodes/links/monitors/monitorInformation from a pickle file.
+
+        If `path` is not provided, a file picker is shown.
+        """
+        if not path:
+            path, _ = QFileDialog.getOpenFileName(
+                self.window,
+                "Select a saved schematic state",
+                "",
+                "Pickle files (*.pkl);;All files (*)",
+            )
+            if not path:
+                return None  # user cancelled
+
+        with open(path, "rb") as f:
+            payload = pickle.load(f)
+
+        print(f"[DEBUG] Loaded state from: {path}")
+
+
+        self.nodes = payload.get("nodes")
+        self.links =payload.get("links")
+        self.monitors = payload.get("monitors")
+        self.monitorInformation = payload.get("monitorInformation")
         window.drawGraph(self.links, self.nodes, self.monitors, self.monitorInformation, compressed=True)
 appManager = AppManager()
 app = QApplication(sys.argv)
