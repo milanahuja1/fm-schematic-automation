@@ -3,6 +3,7 @@ from SvgNodeFactory import SvgNodeFactory
 from NetworkDrawer import NetworkDrawer
 from InitialisationScreen import InitialisationScreen
 from ConfigureMonitorsScreen import ConfigureMonitorsScreen
+from ConfigureFilesScreen import ConfigureFilesScreen
 
 class MainWindow(QMainWindow):
     def __init__(self, appManager):
@@ -21,3 +22,6 @@ class MainWindow(QMainWindow):
 
     def configureMonitors(self, monitors,links):
         self.setCentralWidget(ConfigureMonitorsScreen(self.appManager,monitors,links))
+
+    def configureFiles(self, files):
+        self.setCentralWidget(ConfigureFilesScreen(self.appManager,files))

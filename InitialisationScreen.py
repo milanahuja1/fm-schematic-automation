@@ -81,7 +81,7 @@ class InitialisationScreen(QWidget):
         self.check_ready()
 
     def loadData(self):
-        self.appManager.launchConfigureMonitors()
+        self.appManager.launchConfigureFiles(self.files)
 
 
     def check_ready(self):

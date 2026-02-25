@@ -30,6 +30,9 @@ class AppManager:
     def launchInitialisationScreen(self):
         self.window.initialiseParameters()
 
+    def launchConfigureFiles(self, files):
+        self.window.configureFiles(files)
+
 
     def completeMonitorConfig(self,monitorInformation):
         """
