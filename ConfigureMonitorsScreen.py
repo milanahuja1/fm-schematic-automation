@@ -3,6 +3,7 @@ from PyQt6.QtWidgets import QWidget, QFileDialog, QTableWidget, QTableWidgetItem
 from PyQt6.QtCore import Qt
 import os
 import sys
+from collections import defaultdict
 
 
 class ConfigureMonitorsScreen(QWidget):
@@ -85,36 +86,42 @@ class ConfigureMonitorsScreen(QWidget):
         return str(node_id).strip()
 
     def _buildLinksByNode(self, links):
-        """Build {node_id: [ {"id": str, "type": str}, ... ]} from a links list.
+        """Build {node_id: [{"id": str, "type": str}, ...]} from a links list.
 
         Expected links format (list of dicts):
             {"id": str, "upstream": str, "downstream": str, "type": str}
-        """
-        by_node = {}
-        if not links:
-            return by_node
 
-        for l in links:
-            if not isinstance(l, dict):
+        Notes:
+        - Links are indexed against BOTH upstream and downstream node IDs.
+        - Per node, link IDs are de-duplicated (first type wins).
+        """
+        if not links:
+            return {}
+
+        by_node = defaultdict(list)
+
+        for link in links:
+            if not isinstance(link, dict):
                 continue
 
-            lid = self._normaliseNodeID(l.get("id"))
-            up = self._normaliseNodeID(l.get("upstream"))
-            ds = self._normaliseNodeID(l.get("downstream"))
-            ltype = str(l.get("type", "link")).strip()
-
+            lid = self._normaliseNodeID(link.get("id"))
             if not lid:
                 continue
+
+            up = self._normaliseNodeID(link.get("upstream"))
+            ds = self._normaliseNodeID(link.get("downstream"))
+            ltype = str(link.get("type", "link")).strip() or "link"
 
             record = {"id": lid, "type": ltype}
 
             if up:
-                by_node.setdefault(up, []).append(record)
+                by_node[up].append(record)
             if ds:
-                by_node.setdefault(ds, []).append(record)
+                by_node[ds].append(record)
 
-        # De-duplicate per node by link id (keep first type seen)
-        for node, records in list(by_node.items()):
+        # De-duplicate per node by link id (keep first occurrence)
+        deduped_by_node = {}
+        for node, records in by_node.items():
             seen = set()
             deduped = []
             for r in records:
@@ -123,9 +130,9 @@ class ConfigureMonitorsScreen(QWidget):
                     continue
                 seen.add(rid)
                 deduped.append(r)
-            by_node[node] = deduped
+            deduped_by_node[node] = deduped
 
-        return by_node
+        return deduped_by_node
 
     def _linkDisplayText(self, link_id, link_type):
         """e.g. TA047... .03 (weir)"""
@@ -161,6 +168,7 @@ class ConfigureMonitorsScreen(QWidget):
 
             # Col 1: monitorName (user editable QLineEdit)
             monitor_edit = QLineEdit(self.table)
+            monitor_edit.setText(monitor_name)
             monitor_edit.setPlaceholderText("Enter monitor alias")
             self.table.setCellWidget(row, 1, monitor_edit)
 
@@ -239,4 +247,3 @@ class ConfigureMonitorsScreen(QWidget):
 
     def backButtonClicked(self):
         self.appManager.launchInitialisationScreen()
-

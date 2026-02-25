@@ -5,26 +5,12 @@ from NetworkGenerator import NetworkGenerator
 import os
 
 class AppManager:
-    nodePath = None
-    conduitPath = None
-    monitorsPath = None
-    userControlPath = None
-    flumePath = None
-    flapValvePath = None
-    orificePath = None
-    pumpPath = None
-    sluicePath = None
-    weirPath = None
     window = None
-
-
 
     def setWindow(self, window):
         self.window = window
 
     def launchConfigureMonitors(self):
-        self.loadData()
-        self.links = NetworkGenerator.generateLinks(self.conduits, self.userControls, self.flumes, self.flapValves, self.orfices, self.pumps, self.sluices, self.weirs)
         window.configureMonitors(self.monitors,self.links)
 
     def launchInitialisationScreen(self):
@@ -32,6 +18,17 @@ class AppManager:
 
     def launchConfigureFiles(self, files):
         self.window.configureFiles(files)
+
+    def completeFileConfig(self, fileConfigurationTable):
+        #nodes
+        self.nodesPath = fileConfigurationTable["nodes"]["path"]
+        self.monitorsPath = fileConfigurationTable["monitors"]["path"]
+
+        self.nodes = NetworkGenerator.loadNodes(self.nodesPath)
+        self.monitors = NetworkGenerator.loadMonitors(self.monitorsPath)
+        self.links = NetworkGenerator.generateLinks(fileConfigurationTable)
+        self.launchConfigureMonitors()
+
 
 
     def completeMonitorConfig(self,monitorInformation):
@@ -43,20 +40,6 @@ class AppManager:
         """
         self.monitorInformation = monitorInformation
         window.drawGraph(self.links, self.nodes, self.monitors, self.monitorInformation, compressed=True)
-
-    def loadData(self):
-        self.nodes = NetworkGenerator.loadNodes(appManager.nodePath)
-        self.monitors = NetworkGenerator.loadMonitors(appManager.monitorsPath)
-
-        #links:
-        self.conduits = NetworkGenerator.loadEdges(self.conduitPath)
-        self.userControls = NetworkGenerator.loadEdges(self.userControlPath)
-        self.flumes = NetworkGenerator.loadEdges(self.flumePath)
-        self.flapValves = NetworkGenerator.loadEdges(self.flapValvePath)
-        self.orfices = NetworkGenerator.loadEdges(self.orificePath)
-        self.pumps = NetworkGenerator.loadEdges(self.pumpPath)
-        self.sluices = NetworkGenerator.loadEdges(self.sluicePath)
-        self.weirs = NetworkGenerator.loadEdges(self.weirPath)
 appManager = AppManager()
 app = QApplication(sys.argv)
 

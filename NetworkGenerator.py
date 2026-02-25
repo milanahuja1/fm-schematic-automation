@@ -2,30 +2,6 @@ import csv
 
 class NetworkGenerator:
 
-    @staticmethod
-    def loadEdges(filename):
-
-        graph = {}
-        # Allow optional conduit files: if no filename provided, return empty graph
-        if filename is None or str(filename).strip() == "":
-            return graph
-
-        # Use utf-8-sig to automatically strip BOM if present
-        with open(filename, newline="", encoding="utf-8-sig") as file:
-            reader = csv.DictReader(file)
-            # Normalise headers (strip whitespace)
-            if reader.fieldnames:
-                reader.fieldnames = [name.strip() if name else name for name in reader.fieldnames]
-
-            for row in reader:
-                upstream = row["US node ID"]
-                suffix = row["Link suffix"]
-                downstream = row["DS node ID"]
-                link_id = f"{upstream}.{suffix}"
-                if upstream not in graph:
-                    graph[upstream] = []
-                graph[upstream].append((downstream, link_id))
-        return graph
 
     @staticmethod
     def loadNodes(filename):
@@ -102,51 +78,86 @@ class NetworkGenerator:
 
         return monitorMap
 
+    @staticmethod
+    def loadEdges(filename):
+
+        graph = {}
+        # Allow optional conduit files: if no filename provided, return empty graph
+        if filename is None or str(filename).strip() == "":
+            return graph
+
+        # Use utf-8-sig to automatically strip BOM if present
+        with open(filename, newline="", encoding="utf-8-sig") as file:
+            reader = csv.DictReader(file)
+            # Normalise headers (strip whitespace)
+            if reader.fieldnames:
+                reader.fieldnames = [name.strip() if name else name for name in reader.fieldnames]
+
+            for row in reader:
+                upstream = row["US node ID"]
+                suffix = row["Link suffix"]
+                downstream = row["DS node ID"]
+                link_id = f"{upstream}.{suffix}"
+                if upstream not in graph:
+                    graph[upstream] = []
+                graph[upstream].append((downstream, link_id))
+        return graph
 
     @staticmethod
-    def generateLinks(links, userControls, flumes, flapValves, orfices, pumps, sluices, weirs):
-        """
-        Merge all conduit datasets into one unified conduit list.
-        Each dataset is expected to be in the adjacency format returned by loadEdges:
-            { upstream: [(downstream, link_id), ...], ... }
-        """
+    def generateLinks(fileConfigurationTable):
+        """Build a unified list of all link objects from the configured CSV files.
 
+        `fileConfigurationTable` is expected to look like:
+            {
+                "conduits": {"path": "/.../Conduits.csv", "colour": "#3498db"},
+                "weirs": {"path": "/.../Weirs.csv", "colour": "#e74c3c"},
+                "nodes": {"path": "/.../Nodes.csv", "colour": None},
+                "monitors": {"path": "/.../Monitors.csv", "colour": None},
+                ...
+            }
+
+        Returns:
+            A list of dicts, one per link:
+                {
+                    "id": str,
+                    "upstream": str,
+                    "downstream": str,
+                    "type": str,       # e.g. conduits/weirs/orifices
+                    "colour": str|None # colour configured for this file type
+                }
+        """
         all_links = []
         seen_ids = set()
 
-        def _add_dataset(dataset, conduit_type):
-            if not dataset:
-                return
+        if not fileConfigurationTable:
+            return all_links
 
-            for upstream, outs in dataset.items():
-                up = str(upstream).strip()
-                for downstream, link_id in outs:
-                    ds = str(downstream).strip()
-                    lid = str(link_id).strip()
+        for linkType, meta in fileConfigurationTable.items():
+            # Skip non-link datasets
+            if linkType in ("nodes", "monitors"):
+                continue
 
-                    # Avoid duplicates (special types override plain links)
+            path = None
+            colour = None
+            if isinstance(meta, dict):
+                path = meta.get("path")
+                colour = meta.get("colour")
+
+            graph = NetworkGenerator.loadEdges(path)
+
+            for up, downstream_list in graph.items():
+                for ds, lid in downstream_list:
+                    # Avoid duplicates if the same ID appears multiple times across files
                     if lid in seen_ids:
                         continue
-
-                    all_links.append({
-                        "id": lid,
-                        "upstream": up,
-                        "downstream": ds,
-                        "type": conduit_type,
-                    })
-
                     seen_ids.add(lid)
 
-        # Add specialised conduit types first (so they take priority)
-        _add_dataset(userControls, "user_control")
-        _add_dataset(flapValves, "flap_valve")
-        _add_dataset(pumps, "pump")
-        _add_dataset(sluices, "sluice")
-        _add_dataset(weirs, "weir")
-        _add_dataset(flumes, "flume")
-        _add_dataset(orfices, "orifice")
-
-        # Finally add plain conduits (plain pipes)
-        _add_dataset(links, "conduit")
+                    all_links.append({
+                        "id": str(lid).strip(),
+                        "upstream": str(up).strip(),
+                        "downstream": str(ds).strip(),
+                        "type": str(linkType).strip(),
+                        "colour": colour,
+                    })
 
         return all_links

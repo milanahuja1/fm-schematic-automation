@@ -91,21 +91,17 @@ class ConfigureFilesScreen(QWidget):
                     ("Pink", "#ff69b4"),
                     ("Brown", "#8e5a2b"),
                     ("Grey", "#7f8c8d"),
-                    ("None", None),
+                    ("Black", "#000000"),
                 ]
 
                 for name, hex_code in colours:
-                    # Store hex code as the item's data; show a swatch only when a real colour exists
-                    if hex_code is None:
-                        colour_combo.addItem(name, None)
-                    else:
-                        colour_combo.addItem(self._makeColourIcon(hex_code), name, hex_code)
+                    colour_combo.addItem(self._makeColourIcon(hex_code), name, hex_code)
 
                 colour_combo.currentIndexChanged.connect(self._updateOkEnabled)
 
-                # Distribute default colours across rows (skip the final "None" option)
-                if colour_combo.count() > 1:
-                    colour_combo.setCurrentIndex(row % (colour_combo.count() - 1))
+                # Distribute default colours across rows
+                if colour_combo.count() > 0:
+                    colour_combo.setCurrentIndex(row % colour_combo.count())
 
                 self.fileConfigTable.setCellWidget(row, 2, colour_combo)
                 self._updateColourEnabled(row)
@@ -135,14 +131,14 @@ class ConfigureFilesScreen(QWidget):
 
         # Disable colour for nodes and monitors
         if selected_type in ("nodes", "monitors"):
-            # Force colour to the explicit None option when colours are not applicable
-            none_index = colour_widget.findText("None")
-            if none_index != -1:
-                colour_widget.setCurrentIndex(none_index)
-
+            # Clear selection (no colour)
+            colour_widget.setCurrentIndex(-1)
             colour_widget.setEnabled(False)
         else:
+            # If re-enabled and nothing selected, default to first colour
             colour_widget.setEnabled(True)
+            if colour_widget.currentIndex() == -1 and colour_widget.count() > 0:
+                colour_widget.setCurrentIndex(0)
 
     def _updateOkEnabled(self):
         """Enable OK only when every row has selections for both dropdown columns."""
@@ -175,8 +171,8 @@ class ConfigureFilesScreen(QWidget):
         Collect configuration from fileConfigTable.
 
         Returns:
-            dict mapping filename -> {
-                "type": selected file type (str),
+            dict mapping file_type -> {
+                "path": full filepath (str),
                 "colour": selected colour hex (str or None)
             }
         """
@@ -188,42 +184,35 @@ class ConfigureFilesScreen(QWidget):
         table = self.fileConfigTable
 
         for row in range(table.rowCount()):
-            filename_item = table.item(row, 0)
             type_widget = table.cellWidget(row, 1)
             colour_widget = table.cellWidget(row, 2)
 
-            if filename_item is None:
+            if not isinstance(type_widget, QComboBox):
                 continue
 
-            filename = filename_item.text()
+            file_type = type_widget.currentData()
 
-            file_type = None
-            if isinstance(type_widget, QComboBox):
-                file_type = type_widget.currentData()
+            # Skip unselected rows
+            if file_type is None:
+                continue
+
+            # Get full filepath from original files list (row-aligned)
+            full_path = self.files[row]
 
             colour = None
             if isinstance(colour_widget, QComboBox) and colour_widget.isEnabled():
                 colour = colour_widget.currentData()
 
-            config[filename] = {
-                "type": file_type,
+            config[file_type] = {
+                "path": full_path,
                 "colour": colour,
             }
 
         return config
 
     def okButtonClicked(self):
-        fileConfiguration = self._collectTableData()
-
-        # Debug print
-        print("[DEBUG] File configuration:", fileConfiguration)
-
-        # Store on appManager for later use
-        if hasattr(self.appManager, "completeFileConfig"):
-            self.appManager.completeFileConfig(fileConfiguration)
-
-        # Return to previous screen or continue flow
-        self.appManager.launchInitialisationScreen()
+        fileConfigurationTable = self._collectTableData()
+        self.appManager.completeFileConfig(fileConfigurationTable)
 
     def backButtonClicked(self):
         self.appManager.launchInitialisationScreen()
