@@ -49,6 +49,7 @@ class InitialisationScreen(QWidget):
 
     def createGraph(self):
         self.appManager.createGraph()
+        print("hello")
 
     def useSampleData(self):
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -135,7 +136,10 @@ class InitialisationScreen(QWidget):
             self.check_ready()
 
     def check_ready(self):
+        self.createGraphButton.setEnabled(True)
+        """
         if self.nodes_file and self.pipes_file:
             self.createGraphButton.setEnabled(True)
         else:
             self.createGraphButton.setEnabled(False)
+        """
