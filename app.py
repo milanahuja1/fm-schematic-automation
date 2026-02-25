@@ -15,12 +15,20 @@ class AppManager:
     pumpPath = None
     sluicePath = None
     weirPath = None
+    window = None
 
 
-    def createGraph(self):
+
+    def setWindow(self, window):
+        self.window = window
+
+    def launchConfigureMonitors(self):
         self.loadData()
         self.links = NetworkGenerator.generateLinks(self.conduits, self.userControls, self.flumes, self.flapValves, self.orfices, self.pumps, self.sluices, self.weirs)
         window.configureMonitors(self.monitors,self.links)
+
+    def launchInitialisationScreen(self):
+        self.window.initialiseParameters()
 
 
     def completeMonitorConfig(self,monitorInformation):
@@ -51,5 +59,6 @@ app = QApplication(sys.argv)
 
 #Instantiates a window
 window = MainWindow(appManager)
+appManager.setWindow(window)
 window.show()
 sys.exit(app.exec())

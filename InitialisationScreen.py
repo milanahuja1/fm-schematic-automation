@@ -48,7 +48,7 @@ class InitialisationScreen(QWidget):
                 btn.clicked.connect(self.importConduit)
 
     def createGraph(self):
-        self.appManager.createGraph()
+        self.appManager.launchConfigureMonitors()
         print("hello")
 
     def useSampleData(self):
@@ -65,7 +65,7 @@ class InitialisationScreen(QWidget):
         self.appManager.sluicePath = os.path.join(base_dir, "sampleData", "Muston_Sluice.csv")
         self.appManager.weirPath = os.path.join(base_dir, "sampleData", "Muston_Weirs.csv")
 
-        self.appManager.createGraph()
+        self.appManager.launchConfigureMonitors()
 
     def importNodes(self):
         file_path, _ = QFileDialog.getOpenFileName(

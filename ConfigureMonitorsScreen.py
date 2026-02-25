@@ -25,7 +25,7 @@ class ConfigureMonitorsScreen(QWidget):
             self.okButton.setEnabled(False)
 
         if hasattr(self, "closeButton"):
-            self.closeButton.clicked.connect(self.closeButtonClicked)
+            self.closeButton.clicked.connect(self.backButtonClicked)
 
         # Table
         self._setupTable()
@@ -237,5 +237,6 @@ class ConfigureMonitorsScreen(QWidget):
         # Store on appManager for later use (safe default)
         self.appManager.completeMonitorConfig(monitorInformation)
 
-    def closeButtonClicked(self):
-        return
+    def backButtonClicked(self):
+        self.appManager.launchInitialisationScreen()
+
