@@ -69,7 +69,7 @@
     <string>Back</string>
    </property>
   </widget>
-  <widget class="QTableWidget" name="monitorConfigTable">
+  <widget class="QTableWidget" name="fileConfigTable">
    <property name="geometry">
     <rect>
      <x>20</x>
@@ -80,22 +80,7 @@
    </property>
    <column>
     <property name="text">
-     <string>Manhole ID</string>
-    </property>
-   </column>
-   <column>
-    <property name="text">
-     <string>Monitor Name</string>
-    </property>
-   </column>
-   <column>
-    <property name="text">
-     <string>Link</string>
-    </property>
-   </column>
-   <column>
-    <property name="text">
-     <string>Comment</string>
+     <string>Filename</string>
     </property>
    </column>
   </widget>
