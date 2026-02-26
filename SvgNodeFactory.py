@@ -2,9 +2,12 @@ import os
 from PyQt6.QtSvgWidgets import QGraphicsSvgItem
 from PyQt6.QtWidgets import QGraphicsSimpleTextItem
 from PyQt6.QtGui import QFont, QGuiApplication, QPalette
+from PyQt6.QtCore import QPointF
 
 
 class SvgNodeItem(QGraphicsSvgItem):
+    GRID_SIZE = 25  # scene units
+
     def __init__(self, path, node_id, node_type, tooltip_text=None):
         super().__init__(path)
         self.node_id = node_id
@@ -29,10 +32,19 @@ class SvgNodeItem(QGraphicsSvgItem):
 
 
     def itemChange(self, change, value):
+        # Snap to grid while dragging
+        if change == self.GraphicsItemChange.ItemPositionChange and isinstance(value, QPointF):
+            g = float(self.GRID_SIZE)
+            if g > 0:
+                x = round(value.x() / g) * g
+                y = round(value.y() / g) * g
+                return QPointF(x, y)
+
         # When this node moves, update any connected pipes
         if change == self.GraphicsItemChange.ItemPositionHasChanged:
             for pipe in self.connectedPipes:
                 pipe.updatePosition()
+
         return super().itemChange(change, value)
 
 

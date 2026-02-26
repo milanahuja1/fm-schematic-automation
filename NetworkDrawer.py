@@ -60,6 +60,7 @@ class NetworkDrawer:
         NetworkDrawer._logGraphDebug(G)
         NetworkDrawer._ensureCoordinates(nodes)
         NetworkDrawer._applyLayout(G, nodes, conduits)
+        NetworkDrawer._flattenAlignedSegments(nodes, conduits)
         NetworkDrawer._removeOverlaps(nodes)
 
         scene = QGraphicsScene()
@@ -327,6 +328,62 @@ class NetworkDrawer:
             nodes[by_str[sid]]["y"] = y
 
     # ------------------------------------------------------------------
+    # Segment flattening
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _flattenAlignedSegments(nodes, conduits, angle_threshold_deg=15.0):
+        """
+        For every conduit whose two endpoints are nearly horizontal or nearly
+        vertical (within angle_threshold_deg of the axis), snap both nodes so
+        they share the exact same y- (horizontal) or x- (vertical) coordinate.
+
+        Uses the average of the two coordinates so neither node is forced to
+        move more than the other. Runs multiple passes so alignment propagates
+        along chains: if A→B is horizontal and B→C is horizontal, all three
+        end up on the same y after two passes.
+        """
+        if not nodes or not conduits:
+            return
+
+        by_str = {str(nid): nid for nid in nodes}
+        threshold = math.sin(math.radians(angle_threshold_deg))
+
+        # Multiple passes let alignment propagate along chains
+        for _ in range(5):
+            changed = False
+            for c in conduits:
+                u_str = str(c.get("upstream",   "")).strip()
+                d_str = str(c.get("downstream", "")).strip()
+                if u_str not in by_str or d_str not in by_str:
+                    continue
+
+                u_data = nodes[by_str[u_str]]
+                d_data = nodes[by_str[d_str]]
+
+                dx = d_data["x"] - u_data["x"]
+                dy = d_data["y"] - u_data["y"]
+                length = math.sqrt(dx * dx + dy * dy)
+                if length < 1e-6:
+                    continue
+
+                if abs(dy) / length < threshold:          # nearly horizontal
+                    avg_y = (u_data["y"] + d_data["y"]) / 2.0
+                    if u_data["y"] != avg_y or d_data["y"] != avg_y:
+                        u_data["y"] = avg_y
+                        d_data["y"] = avg_y
+                        changed = True
+                elif abs(dx) / length < threshold:        # nearly vertical
+                    avg_x = (u_data["x"] + d_data["x"]) / 2.0
+                    if u_data["x"] != avg_x or d_data["x"] != avg_x:
+                        u_data["x"] = avg_x
+                        d_data["x"] = avg_x
+                        changed = True
+
+            if not changed:
+                break
+
+    # ------------------------------------------------------------------
     # Overlap removal
     # ------------------------------------------------------------------
 
@@ -424,6 +481,7 @@ class NetworkDrawer:
             ds      = str(c.get("downstream", "")).strip()
             edge_id = c.get("id")
             ctype = str(c.get("type", "conduit")).strip().lower()
+            print(f"[DRAW] Link: {edge_id} | Type: {ctype}")
 
             # Prefer an explicit per-link colour (hex string) if provided
             explicit = c.get("colour")
@@ -453,6 +511,7 @@ class NetworkDrawer:
                 arrow_size=10.0,
                 hit_width=12.0,
                 draw_label=False,
+                routing="straight",
             )
             scene.addItem(pipe)
             up_item.connectedPipes.append(pipe)
