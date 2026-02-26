@@ -80,76 +80,90 @@ class NetworkDrawer:
     @staticmethod
     def _insertMonitorNodes(conduits, nodes, monitorInformation):
         """
-        For every entry in monitorInformation that specifies a link (conduit ID),
-        split that conduit into two and insert a new flowmonitor node in between:
+        For every entry in monitorInformation, replace the associated manhole
+        node with a flowmonitor node at the same world position.  All conduits
+        that previously referenced the manhole (both inflows and outflows) are
+        re-wired to reference the monitor instead, so the monitor inherits the
+        manhole's full set of connections.
 
-            upstream ──[pipe]──> downstream
-            becomes:
-            upstream ──[pipe_us]──> [monitor] ──[pipe_ds]──> downstream
+        This means a confluence manhole (multiple inflows) becomes a confluence
+        monitor — all upstream streams flow directly into the monitor node,
+        which is correct: the monitor IS the measurement point where those
+        streams combine.
 
-        The monitor node is given world coordinates at the midpoint of its two
-        neighbours so the fixed-length layout uses the correct direction.
+            Monitor_A ──┐
+                        ├──► Monitor_B ──► downstream
+            other_MH  ──┘
+
+        Self-loop edges and duplicate edges produced by the substitution are
+        silently dropped.
 
         Returns:
-            (modified_conduits, modified_nodes, inserted_manholes)
-            where inserted_manholes is the set of manhole IDs whose monitor was
-            successfully inserted as a separate node (used to suppress the legacy
-            manhole → flowmonitor type override for those nodes).
+            (modified_conduits, modified_nodes, replaced_manholes)
+            where replaced_manholes is the set of str manhole IDs that were
+            removed (used to suppress the legacy type-override in
+            _resolveNodeType).
         """
         if not monitorInformation:
             return conduits, nodes, set()
 
-        conduit_by_id   = {c["id"]: c for c in conduits}
-        to_remove       = set()
-        new_conduits    = []
-        new_nodes       = {}
-        inserted_manholes = set()
+        modified_nodes    = dict(nodes)
+        replaced_manholes = set()
+        manhole_to_monitor = {}   # str(manhole_id) -> monitor_id
 
         for manhole_id, info in monitorInformation.items():
-            link_id = str(info.get("link", "")).strip()
-            if not link_id or link_id not in conduit_by_id:
-                continue
+            manhole_str = str(manhole_id)
+            monitor_id  = str(info.get("monitorName", "") or f"monitor_{manhole_id}").strip()
 
-            original = conduit_by_id[link_id]
-            up_id    = original["upstream"]
-            ds_id    = original["downstream"]
+            manhole_key  = next((k for k in nodes if str(k) == manhole_str), None)
+            manhole_data = nodes.get(manhole_key, {}) if manhole_key is not None else {}
 
-            monitor_id = str(info.get("monitorName", "") or f"monitor_{manhole_id}").strip()
+            note = info.get("note", "").strip()
+            tooltip_parts = [f"Manhole: {manhole_id}"]
+            if note:
+                tooltip_parts.append(f"Note: {note}")
 
-            # World position: midpoint between the two pipe endpoints
-            up_data = nodes.get(up_id, nodes.get(str(up_id), {}))
-            ds_data = nodes.get(ds_id, nodes.get(str(ds_id), {}))
-            mx = (up_data.get("x", 0.0) + ds_data.get("x", 0.0)) / 2.0
-            my = (up_data.get("y", 0.0) + ds_data.get("y", 0.0)) / 2.0
-
-            new_nodes[monitor_id] = {
+            # Place the monitor at the manhole's world position
+            modified_nodes[monitor_id] = {
                 "type":    "flowmonitor",
-                "x":       mx,
-                "y":       my,
-                "tooltip": info.get("note", ""),
+                "x":       manhole_data.get("x", 0.0),
+                "y":       manhole_data.get("y", 0.0),
+                "tooltip": "\n".join(tooltip_parts),
             }
 
-            # Replace the original conduit with two halves
-            new_conduits.append({
-                "id":         f"{link_id}_us",
-                "upstream":   up_id,
-                "downstream": monitor_id,
-                "type":       original["type"],
-            })
-            new_conduits.append({
-                "id":         f"{link_id}_ds",
-                "upstream":   monitor_id,
-                "downstream": ds_id,
-                "type":       original["type"],
-            })
+            # Remove the manhole — the monitor takes its place entirely
+            if manhole_key is not None:
+                modified_nodes.pop(manhole_key, None)
 
-            to_remove.add(link_id)
-            inserted_manholes.add(str(manhole_id))
+            replaced_manholes.add(manhole_str)
+            manhole_to_monitor[manhole_str] = monitor_id
 
-        modified_conduits = [c for c in conduits if c["id"] not in to_remove] + new_conduits
-        modified_nodes    = {**nodes, **new_nodes}
+        # Re-wire every conduit that referenced a manhole to reference its monitor
+        modified_conduits = []
+        seen_edges = set()
 
-        return modified_conduits, modified_nodes, inserted_manholes
+        for c in conduits:
+            c = dict(c)
+            up_str = manhole_to_monitor.get(str(c.get("upstream",   "")).strip(),
+                                            str(c.get("upstream",   "")).strip())
+            ds_str = manhole_to_monitor.get(str(c.get("downstream", "")).strip(),
+                                            str(c.get("downstream", "")).strip())
+            c["upstream"]   = up_str
+            c["downstream"] = ds_str
+
+            # Drop self-loops (both ends resolved to the same monitor)
+            if up_str == ds_str:
+                continue
+
+            # Drop duplicates
+            key = (up_str, ds_str)
+            if key in seen_edges:
+                continue
+            seen_edges.add(key)
+
+            modified_conduits.append(c)
+
+        return modified_conduits, modified_nodes, replaced_manholes
 
     # ------------------------------------------------------------------
     # Graph construction
@@ -460,15 +474,15 @@ class NetworkDrawer:
         """
         Return the display type for a node.
 
-        Manholes that are in the monitors dict are shown as 'flowmonitor' UNLESS
-        their monitor was already inserted as a separate node (in which case the
-        manhole stays as a plain manhole and the dedicated monitor node carries
-        the flowmonitor symbol).
+        Manholes that appear in the monitors dict are shown as 'flowmonitor',
+        unless they were already replaced by a dedicated monitor node
+        (replaced manholes are absent from `nodes` entirely, so this branch
+        is only reached for manholes whose monitorInformation had no valid link).
         """
         node_type = data["type"]
         if monitors and node_id in monitors:
-            already_inserted = inserted_manholes and str(node_id) in inserted_manholes
-            if not already_inserted:
+            already_replaced = inserted_manholes and str(node_id) in inserted_manholes
+            if not already_replaced:
                 if isinstance(node_type, str) and node_type.strip().lower() == "manhole":
                     return "flowmonitor"
         return node_type
